@@ -28,8 +28,7 @@ type MCPServerTemplateSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of MCPServerTemplate. Edit mcpservertemplate_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	PodSpec `json:",inline"`
 }
 
 // MCPServerTemplateStatus defines the observed state of MCPServerTemplate
