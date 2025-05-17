@@ -1,0 +1,27 @@
+# permissions for end users to edit mcpservertemplates.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: mcp-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: mcpservertemplate-editor-role
+rules:
+- apiGroups:
+  - mcp.mcp.opendatahub.io
+  resources:
+  - mcpservertemplates
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - mcp.mcp.opendatahub.io
+  resources:
+  - mcpservertemplates/status
+  verbs:
+  - get

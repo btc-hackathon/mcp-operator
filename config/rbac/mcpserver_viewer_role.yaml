@@ -1,0 +1,23 @@
+# permissions for end users to view mcpservers.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: mcp-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: mcpserver-viewer-role
+rules:
+- apiGroups:
+  - mcp.mcp.opendatahub.io
+  resources:
+  - mcpservers
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - mcp.mcp.opendatahub.io
+  resources:
+  - mcpservers/status
+  verbs:
+  - get
