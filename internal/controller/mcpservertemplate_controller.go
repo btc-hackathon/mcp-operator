@@ -18,6 +18,11 @@ package controller
 
 import (
 	"context"
+	"fmt"
+	"github.com/opendatahub-io/mcp-operator/internal"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -39,7 +44,6 @@ type MCPServerTemplateReconciler struct {
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
 // the MCPServerTemplate object against the actual cluster state, and then
 // perform operations to make the cluster state reflect the state specified by
 // the user.
@@ -47,9 +51,70 @@ type MCPServerTemplateReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.19.0/pkg/reconcile
 func (r *MCPServerTemplateReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+	logger := log.FromContext(ctx).WithValues("MCPServerTemplate", req.Name, "namespace", req.Namespace)
+	logger.Info("Reconciling for MCPServerTemplate")
 
-	// TODO(user): your logic here
+	// Get the ModelServer object when a reconciliation event is triggered (create, update, delete)
+	mcpServerTemplate := &mcpv1alpha1.MCPServerTemplate{}
+	err := r.Client.Get(ctx, req.NamespacedName, mcpServerTemplate)
+	if err != nil && errors.IsNotFound(err) {
+		logger.Info("Stop MCPServerTemplate reconciliation")
+		return ctrl.Result{}, nil
+	} else if err != nil {
+		logger.Error(err, "Unable to fetch the MCPServerTemplate")
+		return ctrl.Result{}, err
+	}
+
+	if len(mcpServerTemplate.Spec.Containers) == 0 {
+		meta.SetStatusCondition(&mcpServerTemplate.Status.Conditions, metav1.Condition{
+			Type:    internal.TypeTemplateReady,
+			Status:  metav1.ConditionFalse,
+			Reason:  "InvalidTemplateSpec",
+			Message: "No container configuration found in MCPServerTemplate",
+		})
+		if err = r.Status().Update(ctx, mcpServerTemplate); err != nil {
+			logger.Error(err, "Failed to update MCPServerTemplate status")
+			return ctrl.Result{}, err
+		}
+
+		return ctrl.Result{}, nil
+	}
+
+	containerFound := false
+
+	for _, container := range mcpServerTemplate.Spec.Containers {
+		if container.Name == internal.MCPServerContainerName {
+			containerFound = true
+			break
+		}
+	}
+	if !containerFound {
+		errMsg := fmt.Sprintf("No container with name %s found in MCPServerTemplate", internal.MCPServerContainerName)
+		meta.SetStatusCondition(&mcpServerTemplate.Status.Conditions, metav1.Condition{
+			Type:    internal.TypeTemplateReady,
+			Status:  metav1.ConditionFalse,
+			Reason:  "InvalidTemplateSpec",
+			Message: errMsg,
+		})
+		if err = r.Status().Update(ctx, mcpServerTemplate); err != nil {
+			logger.Error(err, "Failed to update MCPServerTemplate status")
+			return ctrl.Result{}, err
+		}
+
+		return ctrl.Result{}, nil
+	}
+
+	meta.SetStatusCondition(&mcpServerTemplate.Status.Conditions, metav1.Condition{
+		Type:    internal.TypeTemplateReady,
+		Status:  metav1.ConditionTrue,
+		Reason:  "ValidTemplate",
+		Message: fmt.Sprintf("MCPServerTemplate is valid"),
+	})
+
+	if err := r.Status().Update(ctx, mcpServerTemplate); err != nil {
+		logger.Error(err, "Failed to update MCPServerTemplate status")
+		return ctrl.Result{}, err
+	}
 
 	return ctrl.Result{}, nil
 }
