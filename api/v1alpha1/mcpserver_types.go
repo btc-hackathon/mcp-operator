@@ -17,18 +17,15 @@ limitations under the License.
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // MCPServerSpec defines the desired state of MCPServer
 type MCPServerSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	Template string `json:"template" validate:"required"`
 
-	PodSpec `json:",inline"`
+	Container corev1.Container `json:"container" patchStrategy:"merge" patchMergeKey:"name" validate:"required"`
 }
 
 // MCPServerStatus defines the observed state of MCPServer

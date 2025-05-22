@@ -1,9 +1,12 @@
 package internal
 
 import (
+	"fmt"
+	mcpv1alpha1 "github.com/opendatahub-io/mcp-operator/api/v1alpha1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
+	"reflect"
 )
 
 func GetDeploymentMode(annotations map[string]string, mcpServerConfig *MCPServerConfig) DeploymentModeType {
@@ -18,9 +21,36 @@ func GetDeploymentMode(annotations map[string]string, mcpServerConfig *MCPServer
 	return DeploymentModeType(mcpServerConfig.DefaultDeploymentMode)
 }
 
-// MergeRuntimeContainers Merge the MCPServer Container struct with the Template Container struct, allowing users
+func FetchMSPServerContainer(containers []v1.Container) (*v1.Container, error) {
+	var mcpServerContainer v1.Container
+	containerFound := false
+
+	for _, container := range containers {
+		if container.Name == MCPServerContainerName {
+			mcpServerContainer = container
+			containerFound = true
+			break
+		}
+	}
+	if !containerFound {
+		return nil, fmt.Errorf("no container found with name %s ", MCPServerContainerName)
+	}
+	return &mcpServerContainer, nil
+}
+
+func MergeTemplateAndMCPServerSpecs(mcpServerTemplate *mcpv1alpha1.MCPServerTemplate, mcpServer *mcpv1alpha1.MCPServer) (*v1.Container, error) {
+
+	mcpServerContainer, err := FetchMSPServerContainer(mcpServerTemplate.Spec.Containers)
+	if err != nil {
+		return nil, err
+	}
+
+	return MergeContainers(mcpServerContainer, &mcpServer.Spec.Container)
+}
+
+// MergeContainers Merge the MCPServer Container struct with the Template Container struct, allowing users
 // to override runtime template settings from the mcp server spec.
-func MergeRuntimeContainers(templateContainer *v1.Container, mcpServerContainer *v1.Container) (*v1.Container, error) {
+func MergeContainers(templateContainer *v1.Container, mcpServerContainer *v1.Container) (*v1.Container, error) {
 	// Save template container name, as the name can be overridden as empty string during the Unmarshal below
 	// since the Name field does not have the 'omitempty' struct tag.
 	templateContainerName := templateContainer.Name
@@ -54,4 +84,12 @@ func MergeRuntimeContainers(templateContainer *v1.Container, mcpServerContainer 
 	mergedContainer.Args = append(append([]string{}, templateContainer.Args...), mcpServerContainer.Args...)
 
 	return &mergedContainer, nil
+}
+
+func IsNil(i any) bool {
+	return reflect.ValueOf(i).IsNil()
+}
+
+func IsNotNil(i any) bool {
+	return !IsNil(i)
 }

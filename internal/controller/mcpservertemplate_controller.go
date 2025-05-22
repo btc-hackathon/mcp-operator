@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/opendatahub-io/mcp-operator/internal"
-	"k8s.io/apimachinery/pkg/api/errors"
+	"github.com/opendatahub-io/mcp-operator/internal/processor"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -35,7 +35,16 @@ import (
 // MCPServerTemplateReconciler reconciles a MCPServerTemplate object
 type MCPServerTemplateReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme                     *runtime.Scheme
+	mcpServerTemplateProcessor processor.MCPServerTemplateProcessor
+}
+
+func NewMCPServerTemplateReconciler(client client.Client, scheme *runtime.Scheme) *MCPServerTemplateReconciler {
+	return &MCPServerTemplateReconciler{
+		Client:                     client,
+		Scheme:                     scheme,
+		mcpServerTemplateProcessor: processor.NewMCPServerTemplateProcessor(client),
+	}
 }
 
 // +kubebuilder:rbac:groups=mcp.mcp.opendatahub.io,resources=mcpservertemplates,verbs=get;list;watch;create;update;patch;delete
@@ -54,14 +63,9 @@ func (r *MCPServerTemplateReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	logger := log.FromContext(ctx).WithValues("MCPServerTemplate", req.Name, "namespace", req.Namespace)
 	logger.Info("Reconciling for MCPServerTemplate")
 
-	// Get the ModelServer object when a reconciliation event is triggered (create, update, delete)
-	mcpServerTemplate := &mcpv1alpha1.MCPServerTemplate{}
-	err := r.Client.Get(ctx, req.NamespacedName, mcpServerTemplate)
-	if err != nil && errors.IsNotFound(err) {
-		logger.Info("Stop MCPServerTemplate reconciliation")
-		return ctrl.Result{}, nil
-	} else if err != nil {
-		logger.Error(err, "Unable to fetch the MCPServerTemplate")
+	// Get the ModelServerTemplate object when a reconciliation event is triggered (create, update, delete)
+	mcpServerTemplate, err := r.mcpServerTemplateProcessor.FetchMCPServerTemplate(ctx, logger, req.NamespacedName)
+	if err != nil {
 		return ctrl.Result{}, err
 	}
 

@@ -12,6 +12,14 @@ var (
 
 var (
 	DeploymentModeAnnotation = MCPServerAPIGroupName + "/deploymentMode"
+
+	MCPServerTemplateAnnotation = MCPServerAPIGroupName + "/mcpServerTemplate"
+)
+
+const (
+	CommonDefaultHttpPort = 80
+
+	MCPServerDefaultHttpPort = "8080"
 )
 
 type DeploymentModeType string
