@@ -11,9 +11,11 @@ var (
 )
 
 var (
-	DeploymentModeAnnotation = MCPServerAPIGroupName + "/deploymentMode"
+	DeploymentModeAnnotation = MCPServerAPIGroupName + "/deployment-mode"
 
-	MCPServerTemplateAnnotation = MCPServerAPIGroupName + "/mcpServerTemplate"
+	MCPServerTemplateAnnotation = MCPServerAPIGroupName + "/mcpservertemplate"
+
+	MCPServerPodLabelKey = MCPServerAPIGroupName + "/" + "mcpserver"
 )
 
 const (

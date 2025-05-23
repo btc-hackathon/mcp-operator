@@ -21,6 +21,16 @@ func GetDeploymentMode(annotations map[string]string, mcpServerConfig *MCPServer
 	return DeploymentModeType(mcpServerConfig.DefaultDeploymentMode)
 }
 
+func GetUnifiedMCPServerContainer(mcpServerTemplate *mcpv1alpha1.MCPServerTemplate, mcpServer *mcpv1alpha1.MCPServer) (*v1.Container, error) {
+
+	mcpServerContainer, err := FetchMSPServerContainer(mcpServerTemplate.Spec.Containers)
+	if err != nil {
+		return nil, err
+	}
+
+	return MergeContainers(mcpServerContainer, &mcpServer.Spec.Container)
+}
+
 func FetchMSPServerContainer(containers []v1.Container) (*v1.Container, error) {
 	var mcpServerContainer v1.Container
 	containerFound := false
@@ -36,16 +46,6 @@ func FetchMSPServerContainer(containers []v1.Container) (*v1.Container, error) {
 		return nil, fmt.Errorf("no container found with name %s ", MCPServerContainerName)
 	}
 	return &mcpServerContainer, nil
-}
-
-func MergeTemplateAndMCPServerSpecs(mcpServerTemplate *mcpv1alpha1.MCPServerTemplate, mcpServer *mcpv1alpha1.MCPServer) (*v1.Container, error) {
-
-	mcpServerContainer, err := FetchMSPServerContainer(mcpServerTemplate.Spec.Containers)
-	if err != nil {
-		return nil, err
-	}
-
-	return MergeContainers(mcpServerContainer, &mcpServer.Spec.Container)
 }
 
 // MergeContainers Merge the MCPServer Container struct with the Template Container struct, allowing users
@@ -92,4 +92,14 @@ func IsNil(i any) bool {
 
 func IsNotNil(i any) bool {
 	return !IsNil(i)
+}
+
+func Union(maps ...map[string]string) map[string]string {
+	result := make(map[string]string)
+	for _, m := range maps {
+		for k, v := range m {
+			result[k] = v
+		}
+	}
+	return result
 }

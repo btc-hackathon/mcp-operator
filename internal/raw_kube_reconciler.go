@@ -8,7 +8,7 @@ import (
 )
 
 type RawKubeReconciler interface {
-	Reconcile(ctx context.Context, logger logr.Logger, mspServer *mcpv1alpha1.MCPServer, podSpec mcpv1alpha1.PodSpec) error
+	Reconcile(ctx context.Context, logger logr.Logger, mspServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate) error
 }
 
 type rawKubeReconciler struct {
@@ -25,14 +25,14 @@ func NewRawKubeReconciler(client client.Client) RawKubeReconciler {
 	}
 }
 
-func (r *rawKubeReconciler) Reconcile(ctx context.Context, logger logr.Logger, mspServer *mcpv1alpha1.MCPServer, podSpec mcpv1alpha1.PodSpec) error {
+func (r *rawKubeReconciler) Reconcile(ctx context.Context, logger logr.Logger, mspServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate) error {
 
-	err := r.deploymentReconciler.Reconcile(ctx, logger, mspServer, podSpec)
+	err := r.deploymentReconciler.Reconcile(ctx, logger, mspServer, mcpServerTemplate)
 	if err != nil {
 		return err
 	}
 
-	err = r.serviceReconciler.Reconcile(ctx, logger, mspServer, podSpec)
+	err = r.serviceReconciler.Reconcile(ctx, logger, mspServer, mcpServerTemplate)
 	if err != nil {
 		return err
 	}

@@ -1,7 +1,8 @@
-package processor
+package internal
 
 import (
 	"context"
+	"fmt"
 	"github.com/go-logr/logr"
 	"github.com/opendatahub-io/mcp-operator/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -24,11 +25,12 @@ func NewMCPServerTemplateProcessor(client client.Client) MCPServerTemplateProces
 }
 
 func (m *mcpServerTemplateProcessor) FetchMCPServerTemplate(ctx context.Context, logger logr.Logger, key types.NamespacedName) (*v1alpha1.MCPServerTemplate, error) {
+
 	mcpServerTemplate := &v1alpha1.MCPServerTemplate{}
 	err := m.Client.Get(ctx, key, mcpServerTemplate)
 	if err != nil && errors.IsNotFound(err) {
 		logger.Info("MCPServerTemplate not found")
-		return nil, nil
+		return nil, fmt.Errorf("MCPServerTemplate(%s) not found", key)
 	} else if err != nil {
 		logger.Error(err, "Unable to fetch the MCPServerTemplate")
 		return nil, err

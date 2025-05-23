@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/opendatahub-io/mcp-operator/internal"
-	"github.com/opendatahub-io/mcp-operator/internal/processor"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -36,14 +35,14 @@ import (
 type MCPServerTemplateReconciler struct {
 	client.Client
 	Scheme                     *runtime.Scheme
-	mcpServerTemplateProcessor processor.MCPServerTemplateProcessor
+	mcpServerTemplateProcessor internal.MCPServerTemplateProcessor
 }
 
 func NewMCPServerTemplateReconciler(client client.Client, scheme *runtime.Scheme) *MCPServerTemplateReconciler {
 	return &MCPServerTemplateReconciler{
 		Client:                     client,
 		Scheme:                     scheme,
-		mcpServerTemplateProcessor: processor.NewMCPServerTemplateProcessor(client),
+		mcpServerTemplateProcessor: internal.NewMCPServerTemplateProcessor(client),
 	}
 }
 

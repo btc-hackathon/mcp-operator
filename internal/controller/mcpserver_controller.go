@@ -18,9 +18,9 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	mcpv1alpha1 "github.com/opendatahub-io/mcp-operator/api/v1alpha1"
 	"github.com/opendatahub-io/mcp-operator/internal"
-	"github.com/opendatahub-io/mcp-operator/internal/processor"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -40,8 +40,9 @@ type MCPServerReconciler struct {
 	client.Client
 	Scheme                     *runtime.Scheme
 	mcpServerConfigProcessor   *internal.MCPServerConfigProcessor
-	mcpServerTemplateProcessor processor.MCPServerTemplateProcessor
+	mcpServerTemplateProcessor internal.MCPServerTemplateProcessor
 	rawKubeReconciler          internal.RawKubeReconciler
+	ksvcReconciler             internal.KSVCReconciler
 }
 
 func NewMCPServerReconciler(client client.Client, scheme *runtime.Scheme) *MCPServerReconciler {
@@ -50,6 +51,7 @@ func NewMCPServerReconciler(client client.Client, scheme *runtime.Scheme) *MCPSe
 		Scheme:                   scheme,
 		mcpServerConfigProcessor: internal.NewMCPServerConfigProcessor(client),
 		rawKubeReconciler:        internal.NewRawKubeReconciler(client),
+		ksvcReconciler:           internal.NewKSVCReconciler(client),
 	}
 }
 
@@ -86,26 +88,20 @@ func (r *MCPServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return reconcile.Result{}, err
 	}
 
-	mcpServerTemplate, err := r.mcpServerTemplateProcessor.FetchMCPServerTemplate(ctx, logger,
-		types.NamespacedName{Name: mcpServer.Spec.Template, Namespace: mcpServer.Namespace})
-
-	mergedContainer, err := internal.MergeTemplateAndMCPServerSpecs(mcpServerTemplate, mcpServer)
-	var newPodSpecContainers []corev1.Container
-	for _, container := range mcpServerTemplate.Spec.Containers {
-		if container.Name == internal.MCPServerContainerName {
-			newPodSpecContainers = append(newPodSpecContainers, *mergedContainer)
-		} else {
-			newPodSpecContainers = append(newPodSpecContainers, container)
-		}
+	templateName, ok := mcpServer.Annotations[internal.MCPServerTemplateAnnotation]
+	if !ok || templateName == "" {
+		return ctrl.Result{}, fmt.Errorf("no template name found in MCPServer annotations")
 	}
+
+	mcpServerTemplate, err := r.mcpServerTemplateProcessor.FetchMCPServerTemplate(ctx, logger, types.NamespacedName{Name: templateName, Namespace: mcpServer.Namespace})
 
 	deploymentMode := internal.GetDeploymentMode(mcpServer.Annotations, mcpServerConfig)
 	logger.Info("MCPServer deployment mode ", "deployment mode ", deploymentMode)
 
 	if deploymentMode == internal.RawDeployment {
-		r.rawKubeReconciler.Reconcile(mcpServer)
+		r.rawKubeReconciler.Reconcile(ctx, logger, mcpServer, mcpServerTemplate)
 	} else {
-
+		r.ksvcReconciler.Reconcile(ctx, logger, mcpServer, mcpServerTemplate)
 	}
 
 	return ctrl.Result{}, nil

@@ -16,7 +16,7 @@ import (
 )
 
 type ServiceReconciler interface {
-	Reconcile(ctx context.Context, logger logr.Logger, mspServer *mcpv1alpha1.MCPServer, podSpec mcpv1alpha1.PodSpec) error
+	Reconcile(ctx context.Context, logger logr.Logger, mspServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate) error
 }
 
 type serviceReconciler struct {
@@ -31,11 +31,11 @@ func NewServiceReconciler(client client.Client) ServiceReconciler {
 	}
 }
 
-func (s *serviceReconciler) Reconcile(ctx context.Context, logger logr.Logger, mspServer *mcpv1alpha1.MCPServer, podSpec mcpv1alpha1.PodSpec) error {
+func (s *serviceReconciler) Reconcile(ctx context.Context, logger logr.Logger, mspServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate) error {
 
 	logger.Info("Reconciling Service for RAW Deployment")
 	// Create Desired resource
-	desiredResource, err := s.createDesiredResource(logger, mspServer, podSpec)
+	desiredResource, err := s.createDesiredResource(logger, mspServer, mcpServerTemplate)
 	if err != nil {
 		return err
 	}
@@ -53,9 +53,9 @@ func (s *serviceReconciler) Reconcile(ctx context.Context, logger logr.Logger, m
 	return nil
 }
 
-func (s *serviceReconciler) createDesiredResource(logger logr.Logger, mspServer *mcpv1alpha1.MCPServer, podSpec mcpv1alpha1.PodSpec) (*corev1.Service, error) {
+func (s *serviceReconciler) createDesiredResource(logger logr.Logger, mspServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate) (*corev1.Service, error) {
 
-	container, err := FetchMSPServerContainer(podSpec.Containers)
+	container, err := GetUnifiedMCPServerContainer(mcpServerTemplate, mspServer)
 	if err != nil {
 		return nil, err
 	}
