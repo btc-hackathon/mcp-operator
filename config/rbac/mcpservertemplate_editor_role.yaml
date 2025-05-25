@@ -8,7 +8,7 @@ metadata:
   name: mcpservertemplate-editor-role
 rules:
 - apiGroups:
-  - mcp.mcp.opendatahub.io
+  - mcp.opendatahub.io
   resources:
   - mcpservertemplates
   verbs:
@@ -20,7 +20,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - mcp.mcp.opendatahub.io
+  - mcp.opendatahub.io
   resources:
   - mcpservertemplates/status
   verbs:

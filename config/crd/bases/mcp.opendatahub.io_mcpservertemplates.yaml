@@ -4,9 +4,9 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.16.1
-  name: mcpservertemplates.mcp.mcp.opendatahub.io
+  name: mcpservertemplates.mcp.opendatahub.io
 spec:
-  group: mcp.mcp.opendatahub.io
+  group: mcp.opendatahub.io
   names:
     kind: MCPServerTemplate
     listKind: MCPServerTemplateList

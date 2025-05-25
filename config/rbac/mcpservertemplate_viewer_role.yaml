@@ -8,7 +8,7 @@ metadata:
   name: mcpservertemplate-viewer-role
 rules:
 - apiGroups:
-  - mcp.mcp.opendatahub.io
+  - mcp.opendatahub.io
   resources:
   - mcpservertemplates
   verbs:
@@ -16,7 +16,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - mcp.mcp.opendatahub.io
+  - mcp.opendatahub.io
   resources:
   - mcpservertemplates/status
   verbs:

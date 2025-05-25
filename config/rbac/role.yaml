@@ -5,7 +5,7 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
-  - mcp.mcp.opendatahub.io
+  - mcp.opendatahub.io
   resources:
   - mcpservers
   - mcpservertemplates
@@ -18,14 +18,14 @@ rules:
   - update
   - watch
 - apiGroups:
-  - mcp.mcp.opendatahub.io
+  - mcp.opendatahub.io
   resources:
   - mcpservers/finalizers
   - mcpservertemplates/finalizers
   verbs:
   - update
 - apiGroups:
-  - mcp.mcp.opendatahub.io
+  - mcp.opendatahub.io
   resources:
   - mcpservers/status
   - mcpservertemplates/status

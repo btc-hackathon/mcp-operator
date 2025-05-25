@@ -45,9 +45,9 @@ func NewMCPServerTemplateReconciler(client client.Client, scheme *runtime.Scheme
 	}
 }
 
-// +kubebuilder:rbac:groups=mcp.mcp.opendatahub.io,resources=mcpservertemplates,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=mcp.mcp.opendatahub.io,resources=mcpservertemplates/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=mcp.mcp.opendatahub.io,resources=mcpservertemplates/finalizers,verbs=update
+// +kubebuilder:rbac:groups=mcp.opendatahub.io,resources=mcpservertemplates,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=mcp.opendatahub.io,resources=mcpservertemplates/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=mcp.opendatahub.io,resources=mcpservertemplates/finalizers,verbs=update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
