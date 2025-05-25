@@ -25,21 +25,17 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type MCPServerProcessor interface {
-	FetchMCPServer(ctx context.Context, logger logr.Logger, key types.NamespacedName) (*v1alpha1.MCPServer, error)
-}
-
-type mcpServerProcessor struct {
+type MCPServerProcessor struct {
 	client.Client
 }
 
-func NewMCPServerProcessor(client client.Client) MCPServerProcessor {
-	return &mcpServerProcessor{
+func NewMCPServerProcessor(client client.Client) *MCPServerProcessor {
+	return &MCPServerProcessor{
 		client,
 	}
 }
 
-func (m *mcpServerProcessor) FetchMCPServer(ctx context.Context, logger logr.Logger, key types.NamespacedName) (*v1alpha1.MCPServer, error) {
+func (m *MCPServerProcessor) FetchMCPServer(ctx context.Context, logger logr.Logger, key types.NamespacedName) (*v1alpha1.MCPServer, error) {
 
 	mcpServer := &v1alpha1.MCPServer{}
 	err := m.Client.Get(ctx, key, mcpServer)

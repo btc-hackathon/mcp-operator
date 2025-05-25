@@ -19,24 +19,20 @@ package internal
 import "os"
 
 var (
-	MCPServerAPIGroupName = "mcp.opendatahub.io"
-	OperatorNamespace     = getEnvOrDefault("POD_NAMESPACE", "redhat-ods-applications")
-	MCPServerConfigMap    = "mcpserver-config"
-
+	MCPServerAPIGroupName  = "mcp.opendatahub.io"
+	OperatorNamespace      = getEnvOrDefault("POD_NAMESPACE", "redhat-ods-applications")
+	MCPServerConfigMap     = "mcp-operator-mcpserver-config"
 	MCPServerContainerName = "mcpserver-container"
 )
 
 var (
-	DeploymentModeAnnotation = MCPServerAPIGroupName + "/deployment-mode"
-
+	DeploymentModeAnnotation    = MCPServerAPIGroupName + "/deploymentmode"
 	MCPServerTemplateAnnotation = MCPServerAPIGroupName + "/mcpservertemplate"
-
-	MCPServerPodLabelKey = MCPServerAPIGroupName + "/" + "mcpserver"
+	MCPServerPodLabelKey        = MCPServerAPIGroupName + "/" + "mcpserver"
 )
 
 const (
-	CommonDefaultHttpPort = 80
-
+	CommonDefaultHttpPort    = 80
 	MCPServerDefaultHttpPort = "8080"
 )
 

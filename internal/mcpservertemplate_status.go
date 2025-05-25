@@ -31,21 +31,17 @@ const (
 )
 
 // MCPServerTemplateStatusHandler ...
-type MCPServerTemplateStatusHandler interface {
-	HandleStatusChange(ctx context.Context, logger logr.Logger, instance *v1alpha1.MCPServerTemplate, err error)
-}
-
-type mcpServerTemplateStatusHandler struct {
+type MCPServerTemplateStatusHandler struct {
 	client.Client
 }
 
-func NewMCPServerTemplateStatusHandler(client client.Client) MCPServerTemplateStatusHandler {
-	return &mcpServerTemplateStatusHandler{
+func NewMCPServerTemplateStatusHandler(client client.Client) *MCPServerTemplateStatusHandler {
+	return &MCPServerTemplateStatusHandler{
 		client,
 	}
 }
 
-func (s *mcpServerTemplateStatusHandler) HandleStatusChange(ctx context.Context, logger logr.Logger, mcpServerTemplate *v1alpha1.MCPServerTemplate, err error) {
+func (s *MCPServerTemplateStatusHandler) HandleStatusChange(ctx context.Context, logger logr.Logger, mcpServerTemplate *v1alpha1.MCPServerTemplate, err error) {
 
 	if err != nil {
 		meta.SetStatusCondition(&mcpServerTemplate.Status.Conditions, metav1.Condition{

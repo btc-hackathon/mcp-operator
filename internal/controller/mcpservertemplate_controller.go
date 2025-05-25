@@ -32,8 +32,8 @@ import (
 type MCPServerTemplateReconciler struct {
 	client.Client
 	Scheme                     *runtime.Scheme
-	mcpServerTemplateProcessor internal.MCPServerTemplateProcessor
-	statusHandler              internal.MCPServerTemplateStatusHandler
+	mcpServerTemplateProcessor *internal.MCPServerTemplateProcessor
+	statusHandler              *internal.MCPServerTemplateStatusHandler
 }
 
 func NewMCPServerTemplateReconciler(client client.Client, scheme *runtime.Scheme) *MCPServerTemplateReconciler {

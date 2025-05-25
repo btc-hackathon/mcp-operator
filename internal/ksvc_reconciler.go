@@ -29,23 +29,19 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type KSVCReconciler interface {
-	Reconcile(ctx context.Context, logger logr.Logger, mspServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate) error
-}
-
-type ksvcReconciler struct {
+type KSVCReconciler struct {
 	client         client.Client
-	deltaProcessor DeltaProcessor
+	deltaProcessor *DeltaProcessor
 }
 
-func NewKSVCReconciler(client client.Client) KSVCReconciler {
-	return &ksvcReconciler{
+func NewKSVCReconciler(client client.Client) *KSVCReconciler {
+	return &KSVCReconciler{
 		client:         client,
 		deltaProcessor: NewDeltaProcessor(),
 	}
 }
 
-func (k *ksvcReconciler) Reconcile(ctx context.Context, logger logr.Logger, mspServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate) error {
+func (k *KSVCReconciler) Reconcile(ctx context.Context, logger logr.Logger, mspServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate) error {
 
 	logger.Info("Reconciling Knative service for Serverless")
 	// Create Desired resource
@@ -67,7 +63,7 @@ func (k *ksvcReconciler) Reconcile(ctx context.Context, logger logr.Logger, mspS
 	return nil
 }
 
-func (k *ksvcReconciler) createDesiredResource(logger logr.Logger, mcpServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate) (*knservingv1.Service, error) {
+func (k *KSVCReconciler) createDesiredResource(logger logr.Logger, mcpServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate) (*knservingv1.Service, error) {
 
 	mergedContainer, err := GetUnifiedMCPServerContainer(mcpServerTemplate, mcpServer)
 	if err != nil {
@@ -127,7 +123,7 @@ func (k *ksvcReconciler) createDesiredResource(logger logr.Logger, mcpServer *mc
 	return service, nil
 }
 
-func (k *ksvcReconciler) getExistingResource(ctx context.Context, logger logr.Logger, mspServer *mcpv1alpha1.MCPServer) (*knservingv1.Service, error) {
+func (k *KSVCReconciler) getExistingResource(ctx context.Context, logger logr.Logger, mspServer *mcpv1alpha1.MCPServer) (*knservingv1.Service, error) {
 	key := types.NamespacedName{
 		Name:      mspServer.Name,
 		Namespace: mspServer.Namespace,
@@ -144,7 +140,7 @@ func (k *ksvcReconciler) getExistingResource(ctx context.Context, logger logr.Lo
 	return deployment, nil
 }
 
-func (d *ksvcReconciler) processDelta(ctx context.Context, logger logr.Logger, desiredService *knservingv1.Service, existingService *knservingv1.Service) (err error) {
+func (d *KSVCReconciler) processDelta(ctx context.Context, logger logr.Logger, desiredService *knservingv1.Service, existingService *knservingv1.Service) (err error) {
 	comparator := GetKSVCComparator()
 	delta := d.deltaProcessor.ComputeDelta(comparator, desiredService, existingService)
 

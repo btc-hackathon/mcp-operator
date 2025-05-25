@@ -23,25 +23,21 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type RawKubeReconciler interface {
-	Reconcile(ctx context.Context, logger logr.Logger, mspServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate) error
-}
-
-type rawKubeReconciler struct {
+type RawKubeReconciler struct {
 	client               client.Client
-	deploymentReconciler DeploymentReconciler
-	serviceReconciler    ServiceReconciler
+	deploymentReconciler *DeploymentReconciler
+	serviceReconciler    *ServiceReconciler
 }
 
-func NewRawKubeReconciler(client client.Client) RawKubeReconciler {
-	return &rawKubeReconciler{
+func NewRawKubeReconciler(client client.Client) *RawKubeReconciler {
+	return &RawKubeReconciler{
 		client:               client,
 		deploymentReconciler: NewDeploymentReconciler(client),
 		serviceReconciler:    NewServiceReconciler(client),
 	}
 }
 
-func (r *rawKubeReconciler) Reconcile(ctx context.Context, logger logr.Logger, mspServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate) error {
+func (r *RawKubeReconciler) Reconcile(ctx context.Context, logger logr.Logger, mspServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate) error {
 
 	err := r.deploymentReconciler.Reconcile(ctx, logger, mspServer, mcpServerTemplate)
 	if err != nil {

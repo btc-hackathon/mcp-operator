@@ -24,21 +24,24 @@ import (
 type MCPServerReconciler struct {
 	client.Client
 	Scheme                     *runtime.Scheme
-	mcpServerProcessor         internal.MCPServerProcessor
+	mcpServerProcessor         *internal.MCPServerProcessor
 	mcpServerConfigProcessor   *internal.MCPServerConfigProcessor
-	mcpServerTemplateProcessor internal.MCPServerTemplateProcessor
-	rawKubeReconciler          internal.RawKubeReconciler
-	ksvcReconciler             internal.KSVCReconciler
+	mcpServerTemplateProcessor *internal.MCPServerTemplateProcessor
+	rawKubeReconciler          *internal.RawKubeReconciler
+	ksvcReconciler             *internal.KSVCReconciler
+	statusHandler              *internal.MCPServerStatusHandler
 }
 
 func NewMCPServerReconciler(client client.Client, scheme *runtime.Scheme) *MCPServerReconciler {
 	return &MCPServerReconciler{
-		Client:                   client,
-		Scheme:                   scheme,
-		mcpServerProcessor:       internal.NewMCPServerProcessor(client),
-		mcpServerConfigProcessor: internal.NewMCPServerConfigProcessor(client),
-		rawKubeReconciler:        internal.NewRawKubeReconciler(client),
-		ksvcReconciler:           internal.NewKSVCReconciler(client),
+		Client:                     client,
+		Scheme:                     scheme,
+		mcpServerProcessor:         internal.NewMCPServerProcessor(client),
+		mcpServerTemplateProcessor: internal.NewMCPServerTemplateProcessor(client),
+		mcpServerConfigProcessor:   internal.NewMCPServerConfigProcessor(client),
+		rawKubeReconciler:          internal.NewRawKubeReconciler(client),
+		ksvcReconciler:             internal.NewKSVCReconciler(client),
+		statusHandler:              internal.NewMCPServerStatusHandler(client),
 	}
 }
 
@@ -70,6 +73,8 @@ func (r *MCPServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, err
 	}
 
+	defer r.statusHandler.HandleStatusChange(ctx, logger, mcpServer, err)
+
 	mcpServerConfig, err := r.mcpServerConfigProcessor.LoadMCPServerConfig(ctx, logger)
 	if err != nil {
 		return ctrl.Result{}, err
@@ -80,7 +85,7 @@ func (r *MCPServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, fmt.Errorf("no template name found in MCPServer annotations")
 	}
 
-	mcpServerTemplate, err := r.mcpServerTemplateProcessor.FetchMCPServerTemplate(ctx, logger, types.NamespacedName{Name: templateName, Namespace: mcpServer.Namespace})
+	mcpServerTemplate, err := r.mcpServerTemplateProcessor.FetchMCPServerTemplate(ctx, logger, types.NamespacedName{Name: templateName, Namespace: internal.OperatorNamespace})
 	if err != nil {
 		return ctrl.Result{}, err
 	}

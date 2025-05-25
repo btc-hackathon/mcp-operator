@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mcpserver-config
+data:
+  config.json: |-
+    {
+      "deployment_mode": "RawDeployment",
+      "transport": "sse"
+    }

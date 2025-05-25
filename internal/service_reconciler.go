@@ -30,23 +30,19 @@ import (
 	"strconv"
 )
 
-type ServiceReconciler interface {
-	Reconcile(ctx context.Context, logger logr.Logger, mspServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate) error
-}
-
-type serviceReconciler struct {
+type ServiceReconciler struct {
 	client         client.Client
-	deltaProcessor DeltaProcessor
+	deltaProcessor *DeltaProcessor
 }
 
-func NewServiceReconciler(client client.Client) ServiceReconciler {
-	return &serviceReconciler{
+func NewServiceReconciler(client client.Client) *ServiceReconciler {
+	return &ServiceReconciler{
 		client:         client,
 		deltaProcessor: NewDeltaProcessor(),
 	}
 }
 
-func (s *serviceReconciler) Reconcile(ctx context.Context, logger logr.Logger, mspServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate) error {
+func (s *ServiceReconciler) Reconcile(ctx context.Context, logger logr.Logger, mspServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate) error {
 
 	logger.Info("Reconciling Service for RAW Deployment")
 	// Create Desired resource
@@ -68,7 +64,7 @@ func (s *serviceReconciler) Reconcile(ctx context.Context, logger logr.Logger, m
 	return nil
 }
 
-func (s *serviceReconciler) createDesiredResource(logger logr.Logger, mspServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate) (*corev1.Service, error) {
+func (s *ServiceReconciler) createDesiredResource(logger logr.Logger, mspServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate) (*corev1.Service, error) {
 
 	container, err := GetUnifiedMCPServerContainer(mcpServerTemplate, mspServer)
 	if err != nil {
@@ -145,7 +141,7 @@ func (s *serviceReconciler) createDesiredResource(logger logr.Logger, mspServer 
 	return service, nil
 }
 
-func (s *serviceReconciler) getExistingResource(ctx context.Context, logger logr.Logger, mspServer *mcpv1alpha1.MCPServer) (*corev1.Service, error) {
+func (s *ServiceReconciler) getExistingResource(ctx context.Context, logger logr.Logger, mspServer *mcpv1alpha1.MCPServer) (*corev1.Service, error) {
 
 	key := types.NamespacedName{
 		Name:      mspServer.Name,
@@ -163,7 +159,7 @@ func (s *serviceReconciler) getExistingResource(ctx context.Context, logger logr
 	return service, nil
 }
 
-func (s *serviceReconciler) processDelta(ctx context.Context, logger logr.Logger, desiredService *corev1.Service, existingService *corev1.Service) (err error) {
+func (s *ServiceReconciler) processDelta(ctx context.Context, logger logr.Logger, desiredService *corev1.Service, existingService *corev1.Service) (err error) {
 	comparator := GetServiceComparator()
 	delta := s.deltaProcessor.ComputeDelta(comparator, desiredService, existingService)
 

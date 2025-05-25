@@ -25,22 +25,17 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type DeploymentProcessor interface {
-	FetchDeployment(ctx context.Context, logger logr.Logger, key types.NamespacedName) (*v1.Deployment, error)
-	IsDeploymentAvailable(ctx context.Context, logger logr.Logger, key types.NamespacedName) (bool, error)
-}
-
-type deploymentProcessor struct {
+type DeploymentProcessor struct {
 	client.Client
 }
 
-func NewDeploymentProcessor(client client.Client) DeploymentProcessor {
-	return &deploymentProcessor{
+func NewDeploymentProcessor(client client.Client) *DeploymentProcessor {
+	return &DeploymentProcessor{
 		client,
 	}
 }
 
-func (d *deploymentProcessor) IsDeploymentAvailable(ctx context.Context, logger logr.Logger, key types.NamespacedName) (bool, error) {
+func (d *DeploymentProcessor) IsDeploymentAvailable(ctx context.Context, logger logr.Logger, key types.NamespacedName) (bool, error) {
 	deployment, err := d.FetchDeployment(ctx, logger, key)
 	if err != nil {
 		return false, err
@@ -50,7 +45,7 @@ func (d *deploymentProcessor) IsDeploymentAvailable(ctx context.Context, logger 
 	return deployment.Status.AvailableReplicas > 0, nil
 }
 
-func (d *deploymentProcessor) FetchDeployment(ctx context.Context, logger logr.Logger, key types.NamespacedName) (*v1.Deployment, error) {
+func (d *DeploymentProcessor) FetchDeployment(ctx context.Context, logger logr.Logger, key types.NamespacedName) (*v1.Deployment, error) {
 	deployment := &v1.Deployment{}
 	err := d.Client.Get(ctx, key, deployment)
 	if err != nil && errors.IsNotFound(err) {

@@ -84,7 +84,7 @@ func (e ReconciliationError) Error() string {
 func ErrorForDeploymentNotReachable(instance string) ReconciliationError {
 	return ReconciliationError{
 		reason:                 DeploymentNotAvailable,
-		reconciliationInterval: ReconciliationAfterThirty,
+		reconciliationInterval: ReconciliationAfterTen,
 		innerError:             fmt.Errorf("Deployment is not yet available for MCPServer instance %s ", instance),
 	}
 }
@@ -98,21 +98,15 @@ func ErrorForRouteCreation(err error) ReconciliationError {
 }
 
 // ReconciliationErrorHandler ...
-type ReconciliationErrorHandler interface {
-	IsReconciliationError(err error) bool
-	GetReconcileResultFor(err error) (ctrl.Result, error)
-	GetReasonForError(err error) ConditionReason
-}
-
-type reconciliationErrorHandler struct {
+type ReconciliationErrorHandler struct {
 }
 
 // NewReconciliationErrorHandler ...
-func NewReconciliationErrorHandler() ReconciliationErrorHandler {
-	return &reconciliationErrorHandler{}
+func NewReconciliationErrorHandler() *ReconciliationErrorHandler {
+	return &ReconciliationErrorHandler{}
 }
 
-func (r *reconciliationErrorHandler) IsReconciliationError(err error) bool {
+func (r *ReconciliationErrorHandler) IsReconciliationError(err error) bool {
 	switch err.(type) {
 	case ReconciliationError:
 		return true
@@ -120,7 +114,7 @@ func (r *reconciliationErrorHandler) IsReconciliationError(err error) bool {
 	return false
 }
 
-func (r *reconciliationErrorHandler) GetReconcileResultFor(err error) (ctrl.Result, error) {
+func (r *ReconciliationErrorHandler) GetReconcileResultFor(err error) (ctrl.Result, error) {
 	reconcileResult := ctrl.Result{}
 
 	// reconciliation always happens if we return an error
@@ -133,7 +127,7 @@ func (r *reconciliationErrorHandler) GetReconcileResultFor(err error) (ctrl.Resu
 	return reconcileResult, err
 }
 
-func (r *reconciliationErrorHandler) GetReasonForError(err error) ConditionReason {
+func (r *ReconciliationErrorHandler) GetReasonForError(err error) ConditionReason {
 	if err == nil {
 		return ""
 	}

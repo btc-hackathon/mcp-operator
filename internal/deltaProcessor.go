@@ -20,18 +20,14 @@ import (
 )
 
 // DeltaProcessor would compare the request to desired resource and return the delta that needs to be process.
-type DeltaProcessor interface {
-	ComputeDelta(comparator ResourceComparator, requestedResource client.Object, deployedResource client.Object) ResourceDelta
+type DeltaProcessor struct {
 }
 
-type deltaProcessor struct {
+func NewDeltaProcessor() *DeltaProcessor {
+	return &DeltaProcessor{}
 }
 
-func NewDeltaProcessor() DeltaProcessor {
-	return &deltaProcessor{}
-}
-
-func (d *deltaProcessor) ComputeDelta(comparator ResourceComparator, desiredResource client.Object, existingResource client.Object) ResourceDelta {
+func (d *DeltaProcessor) ComputeDelta(comparator ResourceComparator, desiredResource client.Object, existingResource client.Object) ResourceDelta {
 	var added bool
 	var updated bool
 	var removed bool

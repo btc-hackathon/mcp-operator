@@ -29,25 +29,21 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type DeploymentReconciler interface {
-	Reconcile(ctx context.Context, logger logr.Logger, mspServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate) error
-}
-
-type deploymentReconciler struct {
+type DeploymentReconciler struct {
 	client              client.Client
-	deploymentProcessor DeploymentProcessor
-	deltaProcessor      DeltaProcessor
+	deploymentProcessor *DeploymentProcessor
+	deltaProcessor      *DeltaProcessor
 }
 
-func NewDeploymentReconciler(client client.Client) DeploymentReconciler {
-	return &deploymentReconciler{
+func NewDeploymentReconciler(client client.Client) *DeploymentReconciler {
+	return &DeploymentReconciler{
 		client:              client,
 		deploymentProcessor: NewDeploymentProcessor(client),
 		deltaProcessor:      NewDeltaProcessor(),
 	}
 }
 
-func (d *deploymentReconciler) Reconcile(ctx context.Context, logger logr.Logger, mspServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate) error {
+func (d *DeploymentReconciler) Reconcile(ctx context.Context, logger logr.Logger, mspServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate) error {
 
 	logger.Info("Reconciling Deployment for RAW Deployment")
 	// Create Desired resource
@@ -80,7 +76,7 @@ func (d *deploymentReconciler) Reconcile(ctx context.Context, logger logr.Logger
 	return nil
 }
 
-func (d *deploymentReconciler) createDesiredResource(logger logr.Logger, mcpServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate) (*v1.Deployment, error) {
+func (d *DeploymentReconciler) createDesiredResource(logger logr.Logger, mcpServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate) (*v1.Deployment, error) {
 
 	mergedContainer, err := GetUnifiedMCPServerContainer(mcpServerTemplate, mcpServer)
 	if err != nil {
@@ -142,7 +138,7 @@ func (d *deploymentReconciler) createDesiredResource(logger logr.Logger, mcpServ
 	return deployment, nil
 }
 
-func (d *deploymentReconciler) getExistingResource(ctx context.Context, logger logr.Logger, mspServer *mcpv1alpha1.MCPServer) (*v1.Deployment, error) {
+func (d *DeploymentReconciler) getExistingResource(ctx context.Context, logger logr.Logger, mspServer *mcpv1alpha1.MCPServer) (*v1.Deployment, error) {
 	key := types.NamespacedName{
 		Name:      mspServer.Name,
 		Namespace: mspServer.Namespace,
@@ -150,7 +146,7 @@ func (d *deploymentReconciler) getExistingResource(ctx context.Context, logger l
 	return d.deploymentProcessor.FetchDeployment(ctx, logger, key)
 }
 
-func (d *deploymentReconciler) processDelta(ctx context.Context, logger logr.Logger, desiredDeployment *v1.Deployment, existingDeployment *v1.Deployment) (err error) {
+func (d *DeploymentReconciler) processDelta(ctx context.Context, logger logr.Logger, desiredDeployment *v1.Deployment, existingDeployment *v1.Deployment) (err error) {
 	comparator := GetDeploymentComparator()
 	delta := d.deltaProcessor.ComputeDelta(comparator, desiredDeployment, existingDeployment)
 

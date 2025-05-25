@@ -20,6 +20,7 @@ import (
 	"crypto/tls"
 	"flag"
 	corev1 "k8s.io/api/core/v1"
+	knservingv1 "knative.dev/serving/pkg/apis/serving/v1"
 	"os"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
@@ -49,6 +50,7 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(corev1.AddToScheme(scheme))
+	utilruntime.Must(knservingv1.AddToScheme(scheme))
 	utilruntime.Must(mcpv1alpha1.AddToScheme(scheme))
 
 	// +kubebuilder:scaffold:scheme
@@ -150,10 +152,8 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "MCPServer")
 		os.Exit(1)
 	}
-	if err = (&controller.MCPServerTemplateReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
+
+	if err = controller.NewMCPServerTemplateReconciler(mgr.GetClient(), mgr.GetScheme()).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MCPServerTemplate")
 		os.Exit(1)
 	}

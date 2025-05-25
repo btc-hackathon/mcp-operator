@@ -26,23 +26,19 @@ import (
 )
 
 // MCPServerStatusHandler ...
-type MCPServerStatusHandler interface {
-	HandleStatusChange(ctx context.Context, logger logr.Logger, instance *v1alpha1.MCPServer, err error)
-}
-
-type mcpServerStatusHandler struct {
+type MCPServerStatusHandler struct {
 	client       client.Client
-	errorHandler ReconciliationErrorHandler
+	errorHandler *ReconciliationErrorHandler
 }
 
-func NewMCPServerStatusHandler(client client.Client) MCPServerStatusHandler {
-	return &mcpServerStatusHandler{
+func NewMCPServerStatusHandler(client client.Client) *MCPServerStatusHandler {
+	return &MCPServerStatusHandler{
 		client:       client,
 		errorHandler: NewReconciliationErrorHandler(),
 	}
 }
 
-func (s *mcpServerStatusHandler) HandleStatusChange(ctx context.Context, logger logr.Logger, mcpServer *v1alpha1.MCPServer, err error) {
+func (s *MCPServerStatusHandler) HandleStatusChange(ctx context.Context, logger logr.Logger, mcpServer *v1alpha1.MCPServer, err error) {
 	logger.Info("Updating status for MCPServer", "err", err)
 
 	if err != nil {
@@ -55,7 +51,7 @@ func (s *mcpServerStatusHandler) HandleStatusChange(ctx context.Context, logger 
 	}
 }
 
-func (s *mcpServerStatusHandler) setFailedConditions(conditions *[]metav1.Condition, err error) {
+func (s *MCPServerStatusHandler) setFailedConditions(conditions *[]metav1.Condition, err error) {
 	reason := s.errorHandler.GetReasonForError(err)
 	message := err.Error()
 	meta.SetStatusCondition(conditions, metav1.Condition{
@@ -66,7 +62,7 @@ func (s *mcpServerStatusHandler) setFailedConditions(conditions *[]metav1.Condit
 	})
 }
 
-func (s *mcpServerStatusHandler) setSuccessfulConditions(conditions *[]metav1.Condition) {
+func (s *MCPServerStatusHandler) setSuccessfulConditions(conditions *[]metav1.Condition) {
 	meta.SetStatusCondition(conditions, metav1.Condition{
 		Type:    string(Ready),
 		Status:  metav1.ConditionTrue,
