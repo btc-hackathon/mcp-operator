@@ -24,7 +24,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -210,38 +209,38 @@ func setDefaultPodSpec(podSpec *corev1.PodSpec) {
 			container.ImagePullPolicy = corev1.PullIfNotPresent
 		}
 		// generate default readiness probe for mcp server container
-		if container.Name == MCPServerContainerName {
-			if container.ReadinessProbe == nil {
-				if len(container.Ports) == 0 {
-					container.ReadinessProbe = &corev1.Probe{
-						ProbeHandler: corev1.ProbeHandler{
-							TCPSocket: &corev1.TCPSocketAction{
-								Port: intstr.IntOrString{
-									IntVal: 8080,
-								},
-							},
-						},
-						TimeoutSeconds:   1,
-						PeriodSeconds:    10,
-						SuccessThreshold: 1,
-						FailureThreshold: 3,
-					}
-				} else {
-					container.ReadinessProbe = &corev1.Probe{
-						ProbeHandler: corev1.ProbeHandler{
-							TCPSocket: &corev1.TCPSocketAction{
-								Port: intstr.IntOrString{
-									IntVal: container.Ports[0].ContainerPort,
-								},
-							},
-						},
-						TimeoutSeconds:   1,
-						PeriodSeconds:    10,
-						SuccessThreshold: 1,
-						FailureThreshold: 3,
-					}
-				}
-			}
-		}
+		//if container.Name == MCPServerContainerName {
+		//	if container.ReadinessProbe == nil {
+		//		if len(container.Ports) == 0 {
+		//			container.ReadinessProbe = &corev1.Probe{
+		//				ProbeHandler: corev1.ProbeHandler{
+		//					TCPSocket: &corev1.TCPSocketAction{
+		//						Port: intstr.IntOrString{
+		//							IntVal: 8080,
+		//						},
+		//					},
+		//				},
+		//				TimeoutSeconds:   1,
+		//				PeriodSeconds:    10,
+		//				SuccessThreshold: 1,
+		//				FailureThreshold: 3,
+		//			}
+		//		} else {
+		//			container.ReadinessProbe = &corev1.Probe{
+		//				ProbeHandler: corev1.ProbeHandler{
+		//					TCPSocket: &corev1.TCPSocketAction{
+		//						Port: intstr.IntOrString{
+		//							IntVal: container.Ports[0].ContainerPort,
+		//						},
+		//					},
+		//				},
+		//				TimeoutSeconds:   1,
+		//				PeriodSeconds:    10,
+		//				SuccessThreshold: 1,
+		//				FailureThreshold: 3,
+		//			}
+		//		}
+		//	}
+		//}
 	}
 }
