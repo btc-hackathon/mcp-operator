@@ -21,9 +21,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // MCPServerTemplateSpec defines the desired state of MCPServerTemplate
 type MCPServerTemplateSpec struct {
 
@@ -58,7 +55,7 @@ type MCPServerTemplateSpec struct {
 // MCPServerTemplateStatus defines the observed state of MCPServerTemplate
 type MCPServerTemplateStatus struct {
 
-	// Conditions store the status conditions of the Memcached instances
+	// Conditions store the status conditions of the MCPServerTemplate instances
 	// +operator-sdk:csv:customresourcedefinitions:type=status
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }

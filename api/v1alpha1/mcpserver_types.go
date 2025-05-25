@@ -19,6 +19,7 @@ package v1alpha1
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/apis"
 )
 
 // MCPServerSpec defines the desired state of MCPServer
@@ -42,8 +43,13 @@ type MCPServerSpec struct {
 
 // MCPServerStatus defines the observed state of MCPServer
 type MCPServerStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+
+	// URL ...
+	URL *apis.URL `json:"url,omitempty"`
+
+	// Conditions store the status conditions of the MCPServer instances
+	// +operator-sdk:csv:customresourcedefinitions:type=status
+	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }
 
 // +kubebuilder:object:root=true

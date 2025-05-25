@@ -20,9 +20,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/opendatahub-io/mcp-operator/internal"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -36,6 +33,7 @@ type MCPServerTemplateReconciler struct {
 	client.Client
 	Scheme                     *runtime.Scheme
 	mcpServerTemplateProcessor internal.MCPServerTemplateProcessor
+	statusHandler              internal.MCPServerTemplateStatusHandler
 }
 
 func NewMCPServerTemplateReconciler(client client.Client, scheme *runtime.Scheme) *MCPServerTemplateReconciler {
@@ -43,6 +41,7 @@ func NewMCPServerTemplateReconciler(client client.Client, scheme *runtime.Scheme
 		Client:                     client,
 		Scheme:                     scheme,
 		mcpServerTemplateProcessor: internal.NewMCPServerTemplateProcessor(client),
+		statusHandler:              internal.NewMCPServerTemplateStatusHandler(client),
 	}
 }
 
@@ -64,27 +63,17 @@ func (r *MCPServerTemplateReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	// Get the ModelServerTemplate object when a reconciliation event is triggered (create, update, delete)
 	mcpServerTemplate, err := r.mcpServerTemplateProcessor.FetchMCPServerTemplate(ctx, logger, req.NamespacedName)
-	if err != nil {
+	if err != nil || mcpServerTemplate == nil {
 		return ctrl.Result{}, err
 	}
 
-	if len(mcpServerTemplate.Spec.Containers) == 0 {
-		meta.SetStatusCondition(&mcpServerTemplate.Status.Conditions, metav1.Condition{
-			Type:    internal.TypeTemplateReady,
-			Status:  metav1.ConditionFalse,
-			Reason:  "InvalidTemplateSpec",
-			Message: "No container configuration found in MCPServerTemplate",
-		})
-		if err = r.Status().Update(ctx, mcpServerTemplate); err != nil {
-			logger.Error(err, "Failed to update MCPServerTemplate status")
-			return ctrl.Result{}, err
-		}
+	defer r.statusHandler.HandleStatusChange(ctx, logger, mcpServerTemplate, err)
 
-		return ctrl.Result{}, nil
+	if len(mcpServerTemplate.Spec.Containers) == 0 {
+		return ctrl.Result{}, fmt.Errorf("no container configuration found in MCPServerTemplate")
 	}
 
 	containerFound := false
-
 	for _, container := range mcpServerTemplate.Spec.Containers {
 		if container.Name == internal.MCPServerContainerName {
 			containerFound = true
@@ -92,33 +81,8 @@ func (r *MCPServerTemplateReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		}
 	}
 	if !containerFound {
-		errMsg := fmt.Sprintf("No container with name %s found in MCPServerTemplate", internal.MCPServerContainerName)
-		meta.SetStatusCondition(&mcpServerTemplate.Status.Conditions, metav1.Condition{
-			Type:    internal.TypeTemplateReady,
-			Status:  metav1.ConditionFalse,
-			Reason:  "InvalidTemplateSpec",
-			Message: errMsg,
-		})
-		if err = r.Status().Update(ctx, mcpServerTemplate); err != nil {
-			logger.Error(err, "Failed to update MCPServerTemplate status")
-			return ctrl.Result{}, err
-		}
-
-		return ctrl.Result{}, nil
+		return ctrl.Result{}, fmt.Errorf("no container with name %s found in MCPServerTemplate", internal.MCPServerContainerName)
 	}
-
-	meta.SetStatusCondition(&mcpServerTemplate.Status.Conditions, metav1.Condition{
-		Type:    internal.TypeTemplateReady,
-		Status:  metav1.ConditionTrue,
-		Reason:  "ValidTemplate",
-		Message: fmt.Sprintf("MCPServerTemplate is valid"),
-	})
-
-	if err := r.Status().Update(ctx, mcpServerTemplate); err != nil {
-		logger.Error(err, "Failed to update MCPServerTemplate status")
-		return ctrl.Result{}, err
-	}
-
 	return ctrl.Result{}, nil
 }
 

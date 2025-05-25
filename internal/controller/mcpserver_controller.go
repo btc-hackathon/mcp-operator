@@ -1,19 +1,3 @@
-/*
-Copyright 2025.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package controller
 
 import (
@@ -21,10 +5,11 @@ import (
 	"fmt"
 	mcpv1alpha1 "github.com/opendatahub-io/mcp-operator/api/v1alpha1"
 	"github.com/opendatahub-io/mcp-operator/internal"
+	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	knservingv1 "knative.dev/serving/pkg/apis/serving/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -39,6 +24,7 @@ import (
 type MCPServerReconciler struct {
 	client.Client
 	Scheme                     *runtime.Scheme
+	mcpServerProcessor         internal.MCPServerProcessor
 	mcpServerConfigProcessor   *internal.MCPServerConfigProcessor
 	mcpServerTemplateProcessor internal.MCPServerTemplateProcessor
 	rawKubeReconciler          internal.RawKubeReconciler
@@ -49,6 +35,7 @@ func NewMCPServerReconciler(client client.Client, scheme *runtime.Scheme) *MCPSe
 	return &MCPServerReconciler{
 		Client:                   client,
 		Scheme:                   scheme,
+		mcpServerProcessor:       internal.NewMCPServerProcessor(client),
 		mcpServerConfigProcessor: internal.NewMCPServerConfigProcessor(client),
 		rawKubeReconciler:        internal.NewRawKubeReconciler(client),
 		ksvcReconciler:           internal.NewKSVCReconciler(client),
@@ -73,19 +60,14 @@ func (r *MCPServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	logger.Info("Reconciling for ModelSever")
 
 	// Get the ModelServer object when a reconciliation event is triggered (create, update, delete)
-	mcpServer := &mcpv1alpha1.MCPServer{}
-	err := r.Client.Get(ctx, req.NamespacedName, mcpServer)
-	if err != nil && errors.IsNotFound(err) {
-		logger.Info("Stop MCPServer reconciliation")
-		return ctrl.Result{}, nil
-	} else if err != nil {
-		logger.Error(err, "Unable to fetch the MCPServer")
+	mcpServer, err := r.mcpServerProcessor.FetchMCPServer(ctx, logger, req.NamespacedName)
+	if err != nil || mcpServer == nil {
 		return ctrl.Result{}, err
 	}
 
 	mcpServerConfig, err := r.mcpServerConfigProcessor.LoadMCPServerConfig(ctx, logger)
 	if err != nil {
-		return reconcile.Result{}, err
+		return ctrl.Result{}, err
 	}
 
 	templateName, ok := mcpServer.Annotations[internal.MCPServerTemplateAnnotation]
@@ -94,17 +76,41 @@ func (r *MCPServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	mcpServerTemplate, err := r.mcpServerTemplateProcessor.FetchMCPServerTemplate(ctx, logger, types.NamespacedName{Name: templateName, Namespace: mcpServer.Namespace})
+	if err != nil {
+		return ctrl.Result{}, err
+	}
 
 	deploymentMode := internal.GetDeploymentMode(mcpServer.Annotations, mcpServerConfig)
 	logger.Info("MCPServer deployment mode ", "deployment mode ", deploymentMode)
 
 	if deploymentMode == internal.RawDeployment {
-		r.rawKubeReconciler.Reconcile(ctx, logger, mcpServer, mcpServerTemplate)
+		err = r.rawKubeReconciler.Reconcile(ctx, logger, mcpServer, mcpServerTemplate)
+		if err != nil {
+			return internal.NewReconciliationErrorHandler().GetReconcileResultFor(err)
+		}
 	} else {
-		r.ksvcReconciler.Reconcile(ctx, logger, mcpServer, mcpServerTemplate)
+		err = r.ksvcReconciler.Reconcile(ctx, logger, mcpServer, mcpServerTemplate)
+		if err != nil {
+			return internal.NewReconciliationErrorHandler().GetReconcileResultFor(err)
+		}
 	}
 
 	return ctrl.Result{}, nil
+}
+
+func (r *MCPServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
+
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&mcpv1alpha1.MCPServer{}).
+		Owns(&v1.Deployment{}).
+		Owns(&corev1.Service{}).
+		Owns(&knservingv1.Service{}).
+		Watches( // Watch for changes to the ConfigMap
+			&corev1.ConfigMap{},
+			handler.EnqueueRequestsFromMapFunc(r.mapConfigMapToMCPServers),
+			builder.WithPredicates(r.createConfigMapPredicate()),
+		).
+		Complete(r)
 }
 
 func (r *MCPServerReconciler) mapConfigMapToMCPServers(ctx context.Context, configMap client.Object) []reconcile.Request {
@@ -112,7 +118,7 @@ func (r *MCPServerReconciler) mapConfigMapToMCPServers(ctx context.Context, conf
 	requests := []reconcile.Request{}
 
 	// List all MCPServer instances in all namespaces
-	mcpServerList := &mcpv1alpha1.MCPServerList{} // <--- CHANGE THIS
+	mcpServerList := &mcpv1alpha1.MCPServerList{}
 	if err := r.Client.List(ctx, mcpServerList, &client.ListOptions{}); err != nil {
 		logger.Error(err, "Failed to list MCPServer instances for ConfigMap change", "ConfigMap", configMap.GetName())
 		return requests
@@ -151,16 +157,4 @@ func (r *MCPServerReconciler) createConfigMapPredicate() predicate.Predicate {
 			return e.Object.GetName() == watchedConfigMapName && e.Object.GetNamespace() == operatorNamespace
 		},
 	}
-}
-
-func (r *MCPServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
-
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&mcpv1alpha1.MCPServer{}). // Primary resource
-		Watches(                       // Watch for changes to the ConfigMap
-			&corev1.ConfigMap{},
-			handler.EnqueueRequestsFromMapFunc(r.mapConfigMapToMCPServers),
-			builder.WithPredicates(r.createConfigMapPredicate()),
-		).
-		Complete(r)
 }

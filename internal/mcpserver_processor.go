@@ -25,30 +25,30 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type MCPServerTemplateProcessor interface {
-	FetchMCPServerTemplate(ctx context.Context, logger logr.Logger, key types.NamespacedName) (*v1alpha1.MCPServerTemplate, error)
+type MCPServerProcessor interface {
+	FetchMCPServer(ctx context.Context, logger logr.Logger, key types.NamespacedName) (*v1alpha1.MCPServer, error)
 }
 
-type mcpServerTemplateProcessor struct {
+type mcpServerProcessor struct {
 	client.Client
 }
 
-func NewMCPServerTemplateProcessor(client client.Client) MCPServerTemplateProcessor {
-	return &mcpServerTemplateProcessor{
+func NewMCPServerProcessor(client client.Client) MCPServerProcessor {
+	return &mcpServerProcessor{
 		client,
 	}
 }
 
-func (m *mcpServerTemplateProcessor) FetchMCPServerTemplate(ctx context.Context, logger logr.Logger, key types.NamespacedName) (*v1alpha1.MCPServerTemplate, error) {
+func (m *mcpServerProcessor) FetchMCPServer(ctx context.Context, logger logr.Logger, key types.NamespacedName) (*v1alpha1.MCPServer, error) {
 
-	mcpServerTemplate := &v1alpha1.MCPServerTemplate{}
-	err := m.Client.Get(ctx, key, mcpServerTemplate)
+	mcpServer := &v1alpha1.MCPServer{}
+	err := m.Client.Get(ctx, key, mcpServer)
 	if err != nil && errors.IsNotFound(err) {
-		logger.Info("MCPServerTemplate not found")
+		logger.Info("MCPServer not found")
 		return nil, nil
 	} else if err != nil {
-		logger.Error(err, "Unable to fetch the MCPServerTemplate")
+		logger.Error(err, "Unable to fetch the MCPServer")
 		return nil, err
 	}
-	return mcpServerTemplate, nil
+	return mcpServer, nil
 }

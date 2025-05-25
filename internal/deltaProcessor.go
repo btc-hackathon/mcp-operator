@@ -16,13 +16,12 @@ limitations under the License.
 package internal
 
 import (
-	"github.com/opendatahub-io/mcp-operator/internal/comparators"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // DeltaProcessor would compare the request to desired resource and return the delta that needs to be process.
 type DeltaProcessor interface {
-	ComputeDelta(comparator comparators.ResourceComparator, requestedResource client.Object, deployedResource client.Object) ResourceDelta
+	ComputeDelta(comparator ResourceComparator, requestedResource client.Object, deployedResource client.Object) ResourceDelta
 }
 
 type deltaProcessor struct {
@@ -32,7 +31,7 @@ func NewDeltaProcessor() DeltaProcessor {
 	return &deltaProcessor{}
 }
 
-func (d *deltaProcessor) ComputeDelta(comparator comparators.ResourceComparator, desiredResource client.Object, existingResource client.Object) ResourceDelta {
+func (d *deltaProcessor) ComputeDelta(comparator ResourceComparator, desiredResource client.Object, existingResource client.Object) ResourceDelta {
 	var added bool
 	var updated bool
 	var removed bool

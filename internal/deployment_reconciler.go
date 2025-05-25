@@ -1,13 +1,27 @@
+/*
+Copyright 2025.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package internal
 
 import (
 	"context"
 	"github.com/go-logr/logr"
 	mcpv1alpha1 "github.com/opendatahub-io/mcp-operator/api/v1alpha1"
-	"github.com/opendatahub-io/mcp-operator/internal/comparators"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -20,14 +34,16 @@ type DeploymentReconciler interface {
 }
 
 type deploymentReconciler struct {
-	client         client.Client
-	deltaProcessor DeltaProcessor
+	client              client.Client
+	deploymentProcessor DeploymentProcessor
+	deltaProcessor      DeltaProcessor
 }
 
 func NewDeploymentReconciler(client client.Client) DeploymentReconciler {
 	return &deploymentReconciler{
-		client:         client,
-		deltaProcessor: NewDeltaProcessor(),
+		client:              client,
+		deploymentProcessor: NewDeploymentProcessor(client),
+		deltaProcessor:      NewDeltaProcessor(),
 	}
 }
 
@@ -50,6 +66,17 @@ func (d *deploymentReconciler) Reconcile(ctx context.Context, logger logr.Logger
 	if err = d.processDelta(ctx, logger, desiredResource, existingResource); err != nil {
 		return err
 	}
+
+	available, err := d.deploymentProcessor.IsDeploymentAvailable(ctx, logger, types.NamespacedName{Name: mspServer.GetName(), Namespace: mspServer.GetNamespace()})
+	if err != nil {
+		logger.Error(err, "failed to check deployment status")
+		return err
+	}
+	if !available {
+		logger.Info("deployment not available")
+		return ErrorForDeploymentNotReachable(mspServer.GetName())
+	}
+
 	return nil
 }
 
@@ -73,6 +100,7 @@ func (d *deploymentReconciler) createDesiredResource(logger logr.Logger, mcpServ
 		ImagePullSecrets:   append(mcpServerTemplate.Spec.ImagePullSecrets, mcpServer.Spec.ImagePullSecrets...),
 		ServiceAccountName: mcpServer.Spec.ServiceAccountName,
 	}
+	setDefaultPodSpec(podSpec)
 
 	componentMeta := metav1.ObjectMeta{
 		Name:      mcpServer.Name,
@@ -115,25 +143,15 @@ func (d *deploymentReconciler) createDesiredResource(logger logr.Logger, mcpServ
 }
 
 func (d *deploymentReconciler) getExistingResource(ctx context.Context, logger logr.Logger, mspServer *mcpv1alpha1.MCPServer) (*v1.Deployment, error) {
-
 	key := types.NamespacedName{
 		Name:      mspServer.Name,
 		Namespace: mspServer.Namespace,
 	}
-	deployment := &v1.Deployment{}
-	err := d.client.Get(ctx, key, deployment)
-	if err != nil && errors.IsNotFound(err) {
-		logger.Info("Deployment not found.")
-		return nil, nil
-	} else if err != nil {
-		return nil, err
-	}
-	logger.Info("Successfully fetch deployed Deployment")
-	return deployment, nil
+	return d.deploymentProcessor.FetchDeployment(ctx, logger, key)
 }
 
 func (d *deploymentReconciler) processDelta(ctx context.Context, logger logr.Logger, desiredDeployment *v1.Deployment, existingDeployment *v1.Deployment) (err error) {
-	comparator := comparators.GetDeploymentComparator()
+	comparator := GetDeploymentComparator()
 	delta := d.deltaProcessor.ComputeDelta(comparator, desiredDeployment, existingDeployment)
 
 	if !delta.HasChanges() {

@@ -1510,7 +1510,7 @@ spec:
             description: MCPServerTemplateStatus defines the observed state of MCPServerTemplate
             properties:
               conditions:
-                description: Conditions store the status conditions of the Memcached
+                description: Conditions store the status conditions of the MCPServerTemplate
                   instances
                 items:
                   description: Condition contains details for one aspect of the current
