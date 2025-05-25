@@ -15,7 +15,7 @@ resources:
     crdVersion: v1
     namespaced: true
   controller: true
-  domain: mcp.opendatahub.io
+  domain: opendatahub.io
   group: mcp
   kind: MCPServer
   path: github.com/opendatahub-io/mcp-operator/api/v1alpha1

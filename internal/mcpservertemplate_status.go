@@ -62,7 +62,7 @@ func (s *mcpServerTemplateStatusHandler) HandleStatusChange(ctx context.Context,
 			Message: fmt.Sprintf("MCPServerTemplate is valid"),
 		})
 	}
-	if err := s.Status().Update(ctx, mcpServerTemplate); err != nil {
+	if err := s.Client.Status().Update(ctx, mcpServerTemplate); err != nil {
 		logger.Error(err, "Failed to update MCPServerTemplate status")
 	}
 }
