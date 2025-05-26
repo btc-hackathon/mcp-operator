@@ -6,4 +6,19 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
   name: mcpservertemplate-sample
 spec:
-  # TODO(user): Add fields here
+  containers:
+    - name: mcpserver-container
+      image: $(mcp-server-image)
+      ports:
+        - containerPort: 8080
+          protocol: TCP
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      imagePullPolicy: IfNotPresent
+      resources:
+        requests:
+          memory: "128Mi"
+          cpu: "250m"
+        limits:
+          memory: "256Mi"
+          cpu: "500m"

@@ -4,6 +4,12 @@ metadata:
   labels:
     app.kubernetes.io/name: mcp-operator
     app.kubernetes.io/managed-by: kustomize
+  annotations:
+    mcp.opendatahub.io/deploymentmode: RawDeployment
+    mcp.opendatahub.io/visibility: exposed
+    mcp.opendatahub.io/mcpservertemplate: mcp-operator-mcpservertemplate-default
   name: mcpserver-sample
 spec:
-  # TODO(user): Add fields here
+  container:
+    name: mcpserver-container
+    image: quay.io/vajain/mcp-workday:4.0
