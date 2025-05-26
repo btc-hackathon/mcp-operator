@@ -93,8 +93,11 @@ func (r *MCPServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	deploymentMode := internal.GetDeploymentMode(mcpServer.Annotations, mcpServerConfig)
 	logger.Info("MCPServer deployment mode ", "deployment mode ", deploymentMode)
 
+	networkVisibility := internal.GetNetworkVisibility(mcpServer.Annotations, mcpServerConfig)
+	logger.Info("MCPServer Network visibility ", "network Visibility ", networkVisibility)
+
 	if deploymentMode == internal.RawDeployment {
-		err = r.rawKubeReconciler.Reconcile(ctx, logger, mcpServer, mcpServerTemplate)
+		err = r.rawKubeReconciler.Reconcile(ctx, logger, mcpServer, mcpServerTemplate, networkVisibility)
 		if err != nil {
 			return internal.NewReconciliationErrorHandler().GetReconcileResultFor(err)
 		}
@@ -112,21 +115,20 @@ func (r *MCPServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&mcpv1alpha1.MCPServer{}).
-		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		Owns(&v1.Deployment{}).
 		Owns(&corev1.Service{}).
 		Owns(&knservingv1.Service{}).
 		Watches( // Watch for changes to the ConfigMap
 			&corev1.ConfigMap{},
 			handler.EnqueueRequestsFromMapFunc(r.mapConfigMapToMCPServers),
-			builder.WithPredicates(r.createConfigMapPredicate()),
+			builder.WithPredicates(r.createConfigMapPredicate(), predicate.GenerationChangedPredicate{}),
 		).
 		Complete(r)
 }
 
 func (r *MCPServerReconciler) mapConfigMapToMCPServers(ctx context.Context, configMap client.Object) []reconcile.Request {
 	logger := log.FromContext(ctx)
-	requests := []reconcile.Request{}
+	var requests []reconcile.Request
 
 	// List all MCPServer instances in all namespaces
 	mcpServerList := &mcpv1alpha1.MCPServerList{}

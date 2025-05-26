@@ -27,6 +27,7 @@ type RawKubeReconciler struct {
 	client               client.Client
 	deploymentReconciler *DeploymentReconciler
 	serviceReconciler    *ServiceReconciler
+	routeReconciler      *RouteReconciler
 }
 
 func NewRawKubeReconciler(client client.Client) *RawKubeReconciler {
@@ -34,10 +35,11 @@ func NewRawKubeReconciler(client client.Client) *RawKubeReconciler {
 		client:               client,
 		deploymentReconciler: NewDeploymentReconciler(client),
 		serviceReconciler:    NewServiceReconciler(client),
+		routeReconciler:      NewRouteReconciler(client),
 	}
 }
 
-func (r *RawKubeReconciler) Reconcile(ctx context.Context, logger logr.Logger, mspServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate) error {
+func (r *RawKubeReconciler) Reconcile(ctx context.Context, logger logr.Logger, mspServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate, networkVisibility NetworkVisibility) error {
 
 	err := r.deploymentReconciler.Reconcile(ctx, logger, mspServer, mcpServerTemplate)
 	if err != nil {
@@ -48,5 +50,11 @@ func (r *RawKubeReconciler) Reconcile(ctx context.Context, logger logr.Logger, m
 	if err != nil {
 		return err
 	}
+
+	err = r.routeReconciler.Reconcile(ctx, logger, mspServer, mcpServerTemplate, networkVisibility)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

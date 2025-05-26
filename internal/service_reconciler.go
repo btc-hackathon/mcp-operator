@@ -21,8 +21,6 @@ import (
 	"github.com/go-logr/logr"
 	mcpv1alpha1 "github.com/opendatahub-io/mcp-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -31,28 +29,30 @@ import (
 )
 
 type ServiceReconciler struct {
-	client         client.Client
-	deltaProcessor *DeltaProcessor
+	client           client.Client
+	serviceProcessor *ServiceProcessor
+	deltaProcessor   *DeltaProcessor
 }
 
 func NewServiceReconciler(client client.Client) *ServiceReconciler {
 	return &ServiceReconciler{
-		client:         client,
-		deltaProcessor: NewDeltaProcessor(),
+		client:           client,
+		serviceProcessor: NewServiceProcessor(client),
+		deltaProcessor:   NewDeltaProcessor(),
 	}
 }
 
-func (s *ServiceReconciler) Reconcile(ctx context.Context, logger logr.Logger, mspServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate) error {
+func (s *ServiceReconciler) Reconcile(ctx context.Context, logger logr.Logger, mcpServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate) error {
 
 	logger.Info("Reconciling Service for RAW Deployment")
 	// Create Desired resource
-	desiredResource, err := s.createDesiredResource(logger, mspServer, mcpServerTemplate)
+	desiredResource, err := s.createDesiredResource(logger, mcpServer, mcpServerTemplate)
 	if err != nil {
 		return err
 	}
 
 	// Get Existing resource
-	existingResource, err := s.getExistingResource(ctx, logger, mspServer)
+	existingResource, err := s.getExistingResource(ctx, logger, mcpServer)
 	if err != nil {
 		return err
 	}
@@ -64,9 +64,9 @@ func (s *ServiceReconciler) Reconcile(ctx context.Context, logger logr.Logger, m
 	return nil
 }
 
-func (s *ServiceReconciler) createDesiredResource(logger logr.Logger, mspServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate) (*corev1.Service, error) {
+func (s *ServiceReconciler) createDesiredResource(logger logr.Logger, mcpServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate) (*corev1.Service, error) {
 
-	container, err := GetUnifiedMCPServerContainer(mcpServerTemplate, mspServer)
+	container, err := GetUnifiedMCPServerContainer(mcpServerTemplate, mcpServer)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +108,7 @@ func (s *ServiceReconciler) createDesiredResource(logger logr.Logger, mspServer 
 		port, _ := strconv.Atoi(MCPServerDefaultHttpPort)
 		portInt32 := int32(port) // nolint  #nosec G109
 		servicePorts = append(servicePorts, corev1.ServicePort{
-			Name: mspServer.Name,
+			Name: mcpServer.Name,
 			Port: CommonDefaultHttpPort,
 			TargetPort: intstr.IntOrString{
 				Type:   intstr.Int,
@@ -118,45 +118,32 @@ func (s *ServiceReconciler) createDesiredResource(logger logr.Logger, mspServer 
 		})
 	}
 
+	componentMeta := GetCommonMeta(mcpServer, mcpServerTemplate)
+
 	service := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      mspServer.Name,
-			Namespace: mspServer.Namespace,
-			Labels: map[string]string{
-				"name": mspServer.Name,
-			},
-		},
+		ObjectMeta: componentMeta,
 		Spec: corev1.ServiceSpec{
 			Ports: servicePorts,
 			Type:  corev1.ServiceTypeClusterIP,
 			Selector: map[string]string{
-				"app": mspServer.Name,
+				"app": mcpServer.Name,
 			},
 		},
 	}
-	if err := ctrl.SetControllerReference(mspServer, service, s.client.Scheme()); err != nil {
+	if err := ctrl.SetControllerReference(mcpServer, service, s.client.Scheme()); err != nil {
 		logger.Error(err, "Unable to add OwnerReference to the Raw Deployment Service")
 		return nil, err
 	}
 	return service, nil
 }
 
-func (s *ServiceReconciler) getExistingResource(ctx context.Context, logger logr.Logger, mspServer *mcpv1alpha1.MCPServer) (*corev1.Service, error) {
+func (s *ServiceReconciler) getExistingResource(ctx context.Context, logger logr.Logger, mcpServer *mcpv1alpha1.MCPServer) (*corev1.Service, error) {
 
 	key := types.NamespacedName{
-		Name:      mspServer.Name,
-		Namespace: mspServer.Namespace,
+		Name:      mcpServer.Name,
+		Namespace: mcpServer.Namespace,
 	}
-	service := &corev1.Service{}
-	err := s.client.Get(ctx, key, service)
-	if err != nil && errors.IsNotFound(err) {
-		logger.Info("Service not found.")
-		return nil, nil
-	} else if err != nil {
-		return nil, err
-	}
-	logger.Info("Successfully fetch deployed Service")
-	return service, nil
+	return s.serviceProcessor.FetchService(ctx, logger, key)
 }
 
 func (s *ServiceReconciler) processDelta(ctx context.Context, logger logr.Logger, desiredService *corev1.Service, existingService *corev1.Service) (err error) {

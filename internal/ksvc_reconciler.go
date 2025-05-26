@@ -20,9 +20,7 @@ import (
 	"context"
 	"github.com/go-logr/logr"
 	mcpv1alpha1 "github.com/opendatahub-io/mcp-operator/api/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	knservingv1 "knative.dev/serving/pkg/apis/serving/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -65,42 +63,14 @@ func (k *KSVCReconciler) Reconcile(ctx context.Context, logger logr.Logger, mspS
 
 func (k *KSVCReconciler) createDesiredResource(logger logr.Logger, mcpServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate) (*knservingv1.Service, error) {
 
-	mergedContainer, err := GetUnifiedMCPServerContainer(mcpServerTemplate, mcpServer)
+	podSpec, err := GetCommonPodSpec(mcpServer, mcpServerTemplate)
 	if err != nil {
 		return nil, err
 	}
-	var newPodSpecContainers []corev1.Container
-	for _, container := range mcpServerTemplate.Spec.Containers {
-		if container.Name == MCPServerContainerName {
-			newPodSpecContainers = append(newPodSpecContainers, *mergedContainer)
-		} else {
-			newPodSpecContainers = append(newPodSpecContainers, container)
-		}
-	}
-
-	podSpec := &corev1.PodSpec{
-		Containers:         newPodSpecContainers,
-		ImagePullSecrets:   append(mcpServerTemplate.Spec.ImagePullSecrets, mcpServer.Spec.ImagePullSecrets...),
-		ServiceAccountName: mcpServer.Spec.ServiceAccountName,
-	}
-
-	componentMeta := metav1.ObjectMeta{
-		Name:      mcpServer.Name,
-		Namespace: mcpServer.Namespace,
-		Labels: Union(
-			mcpServerTemplate.Labels,
-			mcpServer.Labels,
-			map[string]string{
-				MCPServerPodLabelKey: mcpServer.Name,
-			},
-		),
-		Annotations: Union(
-			mcpServerTemplate.Annotations,
-			mcpServer.Annotations,
-		),
-	}
+	componentMeta := GetCommonMeta(mcpServer, mcpServerTemplate)
 
 	podMetadata := componentMeta
+	podMetadata.Name = mcpServer.Name + "-" + "service"
 	podMetadata.Labels["app"] = mcpServer.Name
 
 	service := &knservingv1.Service{

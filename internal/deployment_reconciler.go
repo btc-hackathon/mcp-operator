@@ -77,41 +77,11 @@ func (d *DeploymentReconciler) Reconcile(ctx context.Context, logger logr.Logger
 
 func (d *DeploymentReconciler) createDesiredResource(logger logr.Logger, mcpServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate) (*v1.Deployment, error) {
 
-	mergedContainer, err := GetUnifiedMCPServerContainer(mcpServerTemplate, mcpServer)
+	podSpec, err := GetCommonPodSpec(mcpServer, mcpServerTemplate)
 	if err != nil {
 		return nil, err
 	}
-	var newPodSpecContainers []corev1.Container
-	for _, container := range mcpServerTemplate.Spec.Containers {
-		if container.Name == MCPServerContainerName {
-			newPodSpecContainers = append(newPodSpecContainers, *mergedContainer)
-		} else {
-			newPodSpecContainers = append(newPodSpecContainers, container)
-		}
-	}
-
-	podSpec := &corev1.PodSpec{
-		Containers:         newPodSpecContainers,
-		ImagePullSecrets:   append(mcpServerTemplate.Spec.ImagePullSecrets, mcpServer.Spec.ImagePullSecrets...),
-		ServiceAccountName: mcpServer.Spec.ServiceAccountName,
-	}
-	setDefaultPodSpec(podSpec)
-
-	componentMeta := metav1.ObjectMeta{
-		Name:      mcpServer.Name,
-		Namespace: mcpServer.Namespace,
-		Labels: Union(
-			mcpServerTemplate.Labels,
-			mcpServer.Labels,
-			map[string]string{
-				MCPServerPodLabelKey: mcpServer.Name,
-			},
-		),
-		Annotations: Union(
-			mcpServerTemplate.Annotations,
-			mcpServer.Annotations,
-		),
-	}
+	componentMeta := GetCommonMeta(mcpServer, mcpServerTemplate)
 
 	podMetadata := componentMeta
 	podMetadata.Labels["app"] = mcpServer.Name
@@ -146,9 +116,8 @@ func (d *DeploymentReconciler) getExistingResource(ctx context.Context, logger l
 }
 
 func (d *DeploymentReconciler) processDelta(ctx context.Context, logger logr.Logger, desiredDeployment *v1.Deployment, existingDeployment *v1.Deployment) (err error) {
-	comparator := GetDeploymentComparator()
+	comparator := GetDeploymentComparator(logger)
 	delta := d.deltaProcessor.ComputeDelta(comparator, desiredDeployment, existingDeployment)
-
 	if !delta.HasChanges() {
 		logger.Info("No delta found")
 		return nil
@@ -178,69 +147,4 @@ func (d *DeploymentReconciler) processDelta(ctx context.Context, logger logr.Log
 		}
 	}
 	return nil
-}
-
-func setDefaultPodSpec(podSpec *corev1.PodSpec) {
-	if podSpec.DNSPolicy == "" {
-		podSpec.DNSPolicy = corev1.DNSClusterFirst
-	}
-	if podSpec.RestartPolicy == "" {
-		podSpec.RestartPolicy = corev1.RestartPolicyAlways
-	}
-	if podSpec.TerminationGracePeriodSeconds == nil {
-		TerminationGracePeriodSeconds := int64(corev1.DefaultTerminationGracePeriodSeconds)
-		podSpec.TerminationGracePeriodSeconds = &TerminationGracePeriodSeconds
-	}
-	if podSpec.SecurityContext == nil {
-		podSpec.SecurityContext = &corev1.PodSecurityContext{}
-	}
-	if podSpec.SchedulerName == "" {
-		podSpec.SchedulerName = corev1.DefaultSchedulerName
-	}
-	for i := range podSpec.Containers {
-		container := &podSpec.Containers[i]
-		if container.TerminationMessagePath == "" {
-			container.TerminationMessagePath = "/dev/termination-log"
-		}
-		if container.TerminationMessagePolicy == "" {
-			container.TerminationMessagePolicy = corev1.TerminationMessageReadFile
-		}
-		if container.ImagePullPolicy == "" {
-			container.ImagePullPolicy = corev1.PullIfNotPresent
-		}
-		// generate default readiness probe for mcp server container
-		//if container.Name == MCPServerContainerName {
-		//	if container.ReadinessProbe == nil {
-		//		if len(container.Ports) == 0 {
-		//			container.ReadinessProbe = &corev1.Probe{
-		//				ProbeHandler: corev1.ProbeHandler{
-		//					TCPSocket: &corev1.TCPSocketAction{
-		//						Port: intstr.IntOrString{
-		//							IntVal: 8080,
-		//						},
-		//					},
-		//				},
-		//				TimeoutSeconds:   1,
-		//				PeriodSeconds:    10,
-		//				SuccessThreshold: 1,
-		//				FailureThreshold: 3,
-		//			}
-		//		} else {
-		//			container.ReadinessProbe = &corev1.Probe{
-		//				ProbeHandler: corev1.ProbeHandler{
-		//					TCPSocket: &corev1.TCPSocketAction{
-		//						Port: intstr.IntOrString{
-		//							IntVal: container.Ports[0].ContainerPort,
-		//						},
-		//					},
-		//				},
-		//				TimeoutSeconds:   1,
-		//				PeriodSeconds:    10,
-		//				SuccessThreshold: 1,
-		//				FailureThreshold: 3,
-		//			}
-		//		}
-		//	}
-		//}
-	}
 }

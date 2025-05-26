@@ -7,4 +7,5 @@ data:
     {
       "deployment_mode": "RawDeployment",
       "transport": "sse"
+      "visibility": "hidden"
     }

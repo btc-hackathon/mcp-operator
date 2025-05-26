@@ -43,7 +43,8 @@ func NewMCPServerConfigProcessor(client client.Client) *MCPServerConfigProcessor
 // +kubebuilder:object:generate=false
 type MCPServerConfig struct {
 	DefaultDeploymentMode string `json:"deployment_mode"`
-	Transport             string `json:"transport"`
+	DefaultTransport      string `json:"transport"`
+	DefaultVisibility     string `json:"visibility"`
 }
 
 func (p *MCPServerConfigProcessor) LoadMCPServerConfig(ctx context.Context, logger logr.Logger) (*MCPServerConfig, error) {

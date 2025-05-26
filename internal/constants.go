@@ -28,12 +28,20 @@ var (
 var (
 	DeploymentModeAnnotation    = MCPServerAPIGroupName + "/deploymentmode"
 	MCPServerTemplateAnnotation = MCPServerAPIGroupName + "/mcpservertemplate"
-	MCPServerPodLabelKey        = MCPServerAPIGroupName + "/" + "mcpserver"
+	NetworkVisibilityAnnotation = MCPServerAPIGroupName + "/visibility"
+	MCPServerLabelKey           = MCPServerAPIGroupName + "/mcpserver"
 )
 
 const (
 	CommonDefaultHttpPort    = 80
 	MCPServerDefaultHttpPort = "8080"
+)
+
+type NetworkVisibility string
+
+const (
+	Exposed NetworkVisibility = "exposed"
+	Hidden  NetworkVisibility = "hidden"
 )
 
 type DeploymentModeType string

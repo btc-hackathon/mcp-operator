@@ -39,6 +39,7 @@ import (
 
 	mcpv1alpha1 "github.com/opendatahub-io/mcp-operator/api/v1alpha1"
 	"github.com/opendatahub-io/mcp-operator/internal/controller"
+	routev1 "github.com/openshift/api/route/v1"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -52,6 +53,7 @@ func init() {
 	utilruntime.Must(corev1.AddToScheme(scheme))
 	utilruntime.Must(knservingv1.AddToScheme(scheme))
 	utilruntime.Must(mcpv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(routev1.Install(scheme))
 
 	// +kubebuilder:scaffold:scheme
 }
