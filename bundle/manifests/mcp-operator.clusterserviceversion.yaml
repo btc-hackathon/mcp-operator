@@ -107,9 +107,13 @@ metadata:
         }
       ]
     capabilities: Basic Install
-    createdAt: "2025-05-26T18:54:14Z"
+    createdAt: "2025-05-26T19:02:04Z"
+    containerImage: quay.io/vajain/mcp-operator:8.0
+    description: MCP Operator for deployment and management of MCP Servers.
     operators.operatorframework.io/builder: operator-sdk-v1.39.2
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
+    repository: https://github.com/btc-hackathon/mcp-operator
+    tectonic-visibility: ocs
   name: mcp-operator.v0.0.2
   namespace: placeholder
 spec:
@@ -135,11 +139,17 @@ spec:
         displayName: Conditions
         path: conditions
       version: v1alpha1
-  description: Operator help to deploy any MCP Server applicatio in Openshift env
+  description: |-
+    MCP Operator is designed for deployment of MCP Server application on Openshift env.
+    
+    * Create Deployment, Service & Route resource when deploy in RawDeployment mode.
+    * Create Knative Service resource when deploy in Serverless mode.
+    
+    **IMPORTANT!** MCP Operator may need Serverless Operator be installed if running in Serverless mode.
   displayName: MCP Operator
   icon:
-  - base64data: ""
-    mediatype: ""
+  - base64data: PHN2ZyBmaWxsPSJjdXJyZW50Q29sb3IiIGZpbGwtcnVsZT0iZXZlbm9kZCIgaGVpZ2h0PSIxZW0iIHN0eWxlPSJmbGV4Om5vbmU7bGluZS1oZWlnaHQ6MSIgdmlld0JveD0iMCAwIDI0IDI0IiB3aWR0aD0iMWVtIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjx0aXRsZT5Nb2RlbENvbnRleHRQcm90b2NvbDwvdGl0bGU+PHBhdGggZD0iTTE1LjY4OCAyLjM0M2EyLjU4OCAyLjU4
+    mediatype: image/svg+xml
   install:
     spec:
       clusterPermissions:
