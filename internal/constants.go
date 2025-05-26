@@ -20,7 +20,7 @@ import "os"
 
 var (
 	MCPServerAPIGroupName  = "mcp.opendatahub.io"
-	OperatorNamespace      = getEnvOrDefault("POD_NAMESPACE", "redhat-ods-applications")
+	OperatorNamespace      = getEnvOrDefault("POD_NAMESPACE", "mcp-operator-system")
 	MCPServerConfigMap     = "mcp-operator-mcpserver-config"
 	MCPServerContainerName = "mcpserver-container"
 )

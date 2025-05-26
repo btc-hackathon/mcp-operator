@@ -112,6 +112,7 @@ func (r *MCPServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&mcpv1alpha1.MCPServer{}).
+		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		Owns(&v1.Deployment{}).
 		Owns(&corev1.Service{}).
 		Owns(&knservingv1.Service{}).
