@@ -1,0 +1,65 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: '[]'
+    capabilities: Basic Install
+  name: mcp-operator.v0.0.0
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - description: MCPServer is the Schema for the mcpservers API
+      displayName: MCPServer
+      kind: MCPServer
+      name: mcpservers.mcp.opendatahub.io
+      statusDescriptors:
+      - description: Conditions store the status conditions of the MCPServer instances
+        displayName: Conditions
+        path: conditions
+      version: v1alpha1
+    - description: MCPServerTemplate is the Schema for the mcpservertemplates API
+      displayName: MCPServer Template
+      kind: MCPServerTemplate
+      name: mcpservertemplates.mcp.opendatahub.io
+      statusDescriptors:
+      - description: Conditions store the status conditions of the MCPServerTemplate
+          instances
+        displayName: Conditions
+        path: conditions
+      version: v1alpha1
+  description: Operator help to deploy any MCP Server applicatio in Openshift env
+  displayName: MCP Operator
+  icon:
+  - base64data: ""
+    mediatype: ""
+  install:
+    spec:
+      deployments: null
+    strategy: ""
+  installModes:
+  - supported: false
+    type: OwnNamespace
+  - supported: false
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  keywords:
+  - MCP
+  - Operator
+  - RedHat
+  - Openshift
+  links:
+  - name: Mcp Operator
+    url: https://mcp-operator.domain
+  maintainers:
+  - email: vajain@redhat.com
+    name: Vaibhav Jain
+  maturity: alpha
+  provider:
+    name: Vaibhav Jain
+    url: https://github.com/btc-hackathon/mcp-operator
+  version: 0.0.0

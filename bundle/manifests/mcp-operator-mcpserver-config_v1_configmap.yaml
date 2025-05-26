@@ -1,0 +1,11 @@
+apiVersion: v1
+data:
+  config.json: |-
+    {
+      "deployment_mode": "RawDeployment",
+      "transport": "sse",
+      "visibility": "hidden"
+    }
+kind: ConfigMap
+metadata:
+  name: mcp-operator-mcpserver-config

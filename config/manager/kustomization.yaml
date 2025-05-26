@@ -5,4 +5,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: quay.io/vajain/mcp-operator
-  newTag: "7.0"
+  newTag: "8.0"
