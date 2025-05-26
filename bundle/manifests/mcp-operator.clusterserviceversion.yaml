@@ -108,7 +108,7 @@ metadata:
       ]
     capabilities: Basic Install
     containerImage: quay.io/vajain/mcp-operator:8.0
-    createdAt: "2025-05-26T19:33:52Z"
+    createdAt: "2025-05-26T20:19:23Z"
     description: MCP Operator for deployment and management of MCP Servers.
     operators.operatorframework.io/builder: operator-sdk-v1.39.2
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
@@ -217,6 +217,18 @@ spec:
           - patch
           - update
         - apiGroups:
+          - route.openshift.io
+          resources:
+          - routes
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
           - serving.knative.dev
           resources:
           - services/status
@@ -267,6 +279,7 @@ spec:
                     fieldRef:
                       fieldPath: metadata.namespace
                 image: quay.io/vajain/mcp-operator:8.0
+                imagePullPolicy: Always
                 livenessProbe:
                   httpGet:
                     path: /healthz

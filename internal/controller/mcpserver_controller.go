@@ -52,6 +52,8 @@ func NewMCPServerReconciler(client client.Client, scheme *runtime.Scheme) *MCPSe
 // +kubebuilder:rbac:groups=serving.knative.dev,resources=services/status,verbs=get
 // +kubebuilder:rbac:groups=apps,resources=deployments;,verbs=create;delete;get;list;patch;update;watch
 // +kubebuilder:rbac:groups=core,resources=services,verbs=create;delete;get;list;patch;update;watch
+// +kubebuilder:rbac:groups=core,resources=services,verbs=create;delete;get;list;patch;update;watch
+// +kubebuilder:rbac:groups=route.openshift.io,resources=routes,verbs=create;delete;get;list;patch;update;watch
 // +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to

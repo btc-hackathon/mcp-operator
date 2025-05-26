@@ -67,6 +67,18 @@ rules:
   - patch
   - update
 - apiGroups:
+  - route.openshift.io
+  resources:
+  - routes
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - serving.knative.dev
   resources:
   - services/status
