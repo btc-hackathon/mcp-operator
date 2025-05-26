@@ -81,6 +81,7 @@ func (d *DeploymentReconciler) createDesiredResource(logger logr.Logger, mcpServ
 	if err != nil {
 		return nil, err
 	}
+	SetDefaultPodSpec(podSpec)
 	componentMeta := GetCommonMeta(mcpServer, mcpServerTemplate)
 
 	podMetadata := componentMeta

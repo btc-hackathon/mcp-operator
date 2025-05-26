@@ -217,7 +217,6 @@ func GetCommonPodSpec(mcpServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1
 		ImagePullSecrets:   append(mcpServerTemplate.Spec.ImagePullSecrets, mcpServer.Spec.ImagePullSecrets...),
 		ServiceAccountName: mcpServer.Spec.ServiceAccountName,
 	}
-	SetDefaultPodSpec(podSpec)
 	return podSpec, nil
 }
 

@@ -100,6 +100,10 @@ func (s *RouteReconciler) createDesiredResource(ctx context.Context, logger logr
 			Port: &v1.RoutePort{
 				TargetPort: targetPort,
 			},
+			TLS: &v1.TLSConfig{
+				Termination:                   v1.TLSTerminationEdge,
+				InsecureEdgeTerminationPolicy: v1.InsecureEdgeTerminationPolicyRedirect,
+			},
 			WildcardPolicy: v1.WildcardPolicyNone,
 		},
 		Status: v1.RouteStatus{

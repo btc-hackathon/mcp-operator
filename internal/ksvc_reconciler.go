@@ -19,8 +19,10 @@ package internal
 import (
 	"context"
 	"github.com/go-logr/logr"
+	"github.com/golang/protobuf/proto"
 	mcpv1alpha1 "github.com/opendatahub-io/mcp-operator/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	knservingv1 "knative.dev/serving/pkg/apis/serving/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -69,18 +71,25 @@ func (k *KSVCReconciler) createDesiredResource(logger logr.Logger, mcpServer *mc
 	}
 	componentMeta := GetCommonMeta(mcpServer, mcpServerTemplate)
 
-	podMetadata := componentMeta
-	podMetadata.Name = mcpServer.Name + "-" + "service"
-	podMetadata.Labels["app"] = mcpServer.Name
-
 	service := &knservingv1.Service{
 		ObjectMeta: componentMeta,
 		Spec: knservingv1.ServiceSpec{
 			ConfigurationSpec: knservingv1.ConfigurationSpec{
 				Template: knservingv1.RevisionTemplateSpec{
-					ObjectMeta: podMetadata,
+					ObjectMeta: metav1.ObjectMeta{
+						Labels:      componentMeta.Labels,
+						Annotations: componentMeta.Annotations,
+					},
 					Spec: knservingv1.RevisionSpec{
 						PodSpec: *podSpec,
+					},
+				},
+			},
+			RouteSpec: knservingv1.RouteSpec{
+				Traffic: []knservingv1.TrafficTarget{
+					{
+						LatestRevision: proto.Bool(true),
+						Percent:        proto.Int64(100),
 					},
 				},
 			},
