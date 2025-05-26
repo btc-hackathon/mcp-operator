@@ -6,6 +6,6 @@ data:
   config.json: |-
     {
       "deployment_mode": "RawDeployment",
-      "transport": "sse"
+      "transport": "sse",
       "visibility": "hidden"
     }
