@@ -10,14 +10,13 @@ metadata:
           "metadata": {
             "annotations": {
               "mcp.opendatahub.io/deploymentmode": "RawDeployment",
-              "mcp.opendatahub.io/mcpservertemplate": "mcp-operator-mcpservertemplate-default",
-              "mcp.opendatahub.io/visibility": "exposed"
+              "mcp.opendatahub.io/mcpservertemplate": "mcp-operator-raw-mcpserver-template",
+              "mcp.opendatahub.io/visibility": "hidden"
             },
             "labels": {
-              "app.kubernetes.io/managed-by": "kustomize",
               "app.kubernetes.io/name": "mcp-operator"
             },
-            "name": "mcpserver-sample"
+            "name": "mcp-workday"
           },
           "spec": {
             "container": {
@@ -31,12 +30,12 @@ metadata:
           "kind": "MCPServerTemplate",
           "metadata": {
             "annotations": {
-              "openshift.io/display-name": "Default Model Server Template"
+              "openshift.io/display-name": "Model Server Template for RAW Deployment"
             },
             "labels": {
               "opendatahub.io/dashboard": "true"
             },
-            "name": "mcp-operator-mcpservertemplate-default",
+            "name": "mcp-operator-raw-mcpserver-template",
             "namespace": "mcp-operator-system"
           },
           "spec": {
@@ -54,7 +53,7 @@ metadata:
                 "resources": {
                   "limits": {
                     "cpu": "500m",
-                    "memory": "256Mi"
+                    "memory": "512Mi"
                   },
                   "requests": {
                     "cpu": "250m",
@@ -71,11 +70,13 @@ metadata:
           "apiVersion": "mcp.opendatahub.io/v1alpha1",
           "kind": "MCPServerTemplate",
           "metadata": {
-            "labels": {
-              "app.kubernetes.io/managed-by": "kustomize",
-              "app.kubernetes.io/name": "mcp-operator"
+            "annotations": {
+              "openshift.io/display-name": "Model Server Template for RAW Deployment"
             },
-            "name": "mcpservertemplate-sample"
+            "labels": {
+              "opendatahub.io/dashboard": "true"
+            },
+            "name": "raw-mcpserver-template"
           },
           "spec": {
             "containers": [
@@ -92,7 +93,7 @@ metadata:
                 "resources": {
                   "limits": {
                     "cpu": "500m",
-                    "memory": "256Mi"
+                    "memory": "512Mi"
                   },
                   "requests": {
                     "cpu": "250m",
@@ -108,13 +109,13 @@ metadata:
       ]
     capabilities: Basic Install
     containerImage: quay.io/vajain/mcp-operator:8.0
-    createdAt: "2025-05-27T08:48:38Z"
+    createdAt: "2025-05-27T18:02:08Z"
     description: MCP Operator for deployment and management of MCP Servers.
     operators.operatorframework.io/builder: operator-sdk-v1.39.2
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
     repository: https://github.com/btc-hackathon/mcp-operator
     tectonic-visibility: ocs
-  name: mcp-operator.v0.0.5
+  name: mcp-operator.v0.0.6
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -179,6 +180,18 @@ spec:
           - serving.knative.dev
           resources:
           - services
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - maistra.io
+          resources:
+          - servicemeshmembers
           verbs:
           - create
           - delete
@@ -278,7 +291,7 @@ spec:
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.namespace
-                image: quay.io/vajain/mcp-operator:9.0
+                image: quay.io/vajain/mcp-operator:11.0
                 imagePullPolicy: Always
                 livenessProbe:
                   httpGet:
@@ -368,4 +381,4 @@ spec:
   provider:
     name: Vaibhav Jain
     url: https://github.com/btc-hackathon/mcp-operator
-  version: 0.0.5
+  version: 0.0.6

@@ -2,10 +2,10 @@ apiVersion: mcp.opendatahub.io/v1alpha1
 kind: MCPServerTemplate
 metadata:
   annotations:
-    openshift.io/display-name: 'Default Model Server Template'
+    openshift.io/display-name: 'Model Server Template for RAW Deployment'
   labels:
     opendatahub.io/dashboard: 'true'
-  name: mcpservertemplate-default
+  name: raw-mcpserver-template
 spec:
   containers:
     - name: mcpserver-container
@@ -28,5 +28,5 @@ spec:
           memory: "128Mi"
           cpu: "250m"
         limits:
-          memory: "256Mi"
+          memory: "512Mi"
           cpu: "500m"

@@ -3,12 +3,11 @@ kind: MCPServer
 metadata:
   labels:
     app.kubernetes.io/name: mcp-operator
-    app.kubernetes.io/managed-by: kustomize
   annotations:
     mcp.opendatahub.io/deploymentmode: RawDeployment
-    mcp.opendatahub.io/visibility: exposed
-    mcp.opendatahub.io/mcpservertemplate: mcp-operator-mcpservertemplate-default
-  name: mcpserver-sample
+    mcp.opendatahub.io/visibility: hidden
+    mcp.opendatahub.io/mcpservertemplate: mcp-operator-raw-mcpserver-template
+  name: mcp-workday
 spec:
   container:
     name: mcpserver-container

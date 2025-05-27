@@ -62,14 +62,16 @@ func (d *DeploymentReconciler) Reconcile(ctx context.Context, logger logr.Logger
 		return err
 	}
 
-	available, err := d.deploymentProcessor.IsDeploymentAvailable(ctx, logger, types.NamespacedName{Name: mspServer.GetName(), Namespace: mspServer.GetNamespace()})
-	if err != nil {
-		logger.Error(err, "failed to check deployment status")
-		return err
-	}
-	if !available {
-		logger.Info("deployment not available")
-		return ErrorForDeploymentNotReachable(mspServer.GetName())
+	if desiredResource != nil {
+		available, err := d.deploymentProcessor.IsDeploymentAvailable(ctx, logger, types.NamespacedName{Name: mspServer.GetName(), Namespace: mspServer.GetNamespace()})
+		if err != nil {
+			logger.Error(err, "failed to check deployment status")
+			return err
+		}
+		if !available {
+			logger.Info("deployment not available")
+			return ErrorForDeploymentNotReachable(mspServer.GetName())
+		}
 	}
 
 	return nil
