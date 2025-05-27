@@ -20,6 +20,7 @@ import (
 	"github.com/go-logr/logr"
 	v12 "github.com/openshift/api/route/v1"
 	v1 "k8s.io/api/apps/v1"
+	v13 "maistra.io/api/core/v1"
 
 	corev1 "k8s.io/api/core/v1"
 	knservingv1 "knative.dev/serving/pkg/apis/serving/v1"
@@ -100,5 +101,15 @@ func GetRouteComparator() ResourceComparator {
 			reflect.DeepEqual(deployedRoute.Spec.TLS, requestedRoute.Spec.TLS) &&
 			reflect.DeepEqual(deployedRoute.Spec.WildcardPolicy, requestedRoute.Spec.WildcardPolicy) &&
 			reflect.DeepEqual(deployedRoute.ObjectMeta.Labels, requestedRoute.ObjectMeta.Labels)
+	}
+}
+
+func GetServiceMeshMemberComparator() ResourceComparator {
+	return func(deployed client.Object, requested client.Object) bool {
+		deployedSMM := deployed.(*v13.ServiceMeshMember)
+		requestedSMM := requested.(*v13.ServiceMeshMember)
+
+		return deployedSMM.Spec.ControlPlaneRef.Namespace == requestedSMM.Spec.ControlPlaneRef.Namespace &&
+			deployedSMM.Spec.ControlPlaneRef.Name == requestedSMM.Spec.ControlPlaneRef.Name
 	}
 }

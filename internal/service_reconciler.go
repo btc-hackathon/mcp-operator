@@ -42,11 +42,11 @@ func NewServiceReconciler(client client.Client) *ServiceReconciler {
 	}
 }
 
-func (s *ServiceReconciler) Reconcile(ctx context.Context, logger logr.Logger, mcpServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate) error {
+func (s *ServiceReconciler) Reconcile(ctx context.Context, logger logr.Logger, mcpServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate, mcpServerConfig *MCPServerConfig) error {
 
 	logger.Info("Reconciling Service for RAW Deployment")
 	// Create Desired resource
-	desiredResource, err := s.createDesiredResource(logger, mcpServer, mcpServerTemplate)
+	desiredResource, err := s.createDesiredResource(logger, mcpServer, mcpServerTemplate, mcpServerConfig)
 	if err != nil {
 		return err
 	}
@@ -64,7 +64,13 @@ func (s *ServiceReconciler) Reconcile(ctx context.Context, logger logr.Logger, m
 	return nil
 }
 
-func (s *ServiceReconciler) createDesiredResource(logger logr.Logger, mcpServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate) (*corev1.Service, error) {
+func (s *ServiceReconciler) createDesiredResource(logger logr.Logger, mcpServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate, mcpServerConfig *MCPServerConfig) (*corev1.Service, error) {
+
+	deploymentMode := GetDeploymentMode(logger, mcpServer.Annotations, mcpServerConfig)
+	if deploymentMode != RawDeployment {
+		logger.Info("Deployment mode is not RAWDeployment. Skipping Service creation")
+		return nil, nil
+	}
 
 	container, err := GetUnifiedMCPServerContainer(mcpServerTemplate, mcpServer)
 	if err != nil {

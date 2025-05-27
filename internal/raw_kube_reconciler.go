@@ -39,19 +39,19 @@ func NewRawKubeReconciler(client client.Client) *RawKubeReconciler {
 	}
 }
 
-func (r *RawKubeReconciler) Reconcile(ctx context.Context, logger logr.Logger, mspServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate, networkVisibility NetworkVisibility) error {
+func (r *RawKubeReconciler) Reconcile(ctx context.Context, logger logr.Logger, mspServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate, mcpServerConfig *MCPServerConfig) error {
 
-	err := r.deploymentReconciler.Reconcile(ctx, logger, mspServer, mcpServerTemplate)
+	err := r.deploymentReconciler.Reconcile(ctx, logger, mspServer, mcpServerTemplate, mcpServerConfig)
 	if err != nil {
 		return err
 	}
 
-	err = r.serviceReconciler.Reconcile(ctx, logger, mspServer, mcpServerTemplate)
+	err = r.serviceReconciler.Reconcile(ctx, logger, mspServer, mcpServerTemplate, mcpServerConfig)
 	if err != nil {
 		return err
 	}
 
-	err = r.routeReconciler.Reconcile(ctx, logger, mspServer, mcpServerTemplate, networkVisibility)
+	err = r.routeReconciler.Reconcile(ctx, logger, mspServer, mcpServerTemplate, mcpServerConfig)
 	if err != nil {
 		return err
 	}

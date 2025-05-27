@@ -33,8 +33,11 @@ var (
 )
 
 const (
-	CommonDefaultHttpPort    = 80
-	MCPServerDefaultHttpPort = "8080"
+	CommonDefaultHttpPort           = 80
+	MCPServerDefaultHttpPort        = "8080"
+	ServiceMeshMemberName           = "default"
+	ServiceMeshControlPlanName      = "data-science-smcp"
+	ServiceMeshControlPlanNamespace = "istio-system"
 )
 
 type NetworkVisibility string

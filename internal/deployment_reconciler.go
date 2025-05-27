@@ -42,11 +42,11 @@ func NewDeploymentReconciler(client client.Client) *DeploymentReconciler {
 	}
 }
 
-func (d *DeploymentReconciler) Reconcile(ctx context.Context, logger logr.Logger, mspServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate) error {
+func (d *DeploymentReconciler) Reconcile(ctx context.Context, logger logr.Logger, mspServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate, mcpServerConfig *MCPServerConfig) error {
 
 	logger.Info("Reconciling Deployment for RAW Deployment")
 	// Create Desired resource
-	desiredResource, err := d.createDesiredResource(logger, mspServer, mcpServerTemplate)
+	desiredResource, err := d.createDesiredResource(logger, mspServer, mcpServerTemplate, mcpServerConfig)
 	if err != nil {
 		return err
 	}
@@ -75,7 +75,13 @@ func (d *DeploymentReconciler) Reconcile(ctx context.Context, logger logr.Logger
 	return nil
 }
 
-func (d *DeploymentReconciler) createDesiredResource(logger logr.Logger, mcpServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate) (*v1.Deployment, error) {
+func (d *DeploymentReconciler) createDesiredResource(logger logr.Logger, mcpServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate, mcpServerConfig *MCPServerConfig) (*v1.Deployment, error) {
+
+	deploymentMode := GetDeploymentMode(logger, mcpServer.Annotations, mcpServerConfig)
+	if deploymentMode != RawDeployment {
+		logger.Info("Deployment mode is not RAWDeployment. Skipping Deployment creation")
+		return nil, nil
+	}
 
 	podSpec, err := GetCommonPodSpec(mcpServer, mcpServerTemplate)
 	if err != nil {

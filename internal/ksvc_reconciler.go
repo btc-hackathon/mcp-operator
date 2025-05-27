@@ -41,11 +41,11 @@ func NewKSVCReconciler(client client.Client) *KSVCReconciler {
 	}
 }
 
-func (k *KSVCReconciler) Reconcile(ctx context.Context, logger logr.Logger, mspServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate) error {
+func (k *KSVCReconciler) Reconcile(ctx context.Context, logger logr.Logger, mspServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate, mcpServerConfig *MCPServerConfig) error {
 
 	logger.Info("Reconciling Knative service for Serverless")
 	// Create Desired resource
-	desiredResource, err := k.createDesiredResource(logger, mspServer, mcpServerTemplate)
+	desiredResource, err := k.createDesiredResource(logger, mspServer, mcpServerTemplate, mcpServerConfig)
 	if err != nil {
 		return err
 	}
@@ -63,13 +63,22 @@ func (k *KSVCReconciler) Reconcile(ctx context.Context, logger logr.Logger, mspS
 	return nil
 }
 
-func (k *KSVCReconciler) createDesiredResource(logger logr.Logger, mcpServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate) (*knservingv1.Service, error) {
+func (k *KSVCReconciler) createDesiredResource(logger logr.Logger, mcpServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate, mcpServerConfig *MCPServerConfig) (*knservingv1.Service, error) {
+
+	deploymentMode := GetDeploymentMode(logger, mcpServer.Annotations, mcpServerConfig)
+	if deploymentMode != Serverless {
+		logger.Info("Deployment mode is not Serverless. Skipping to create Knative Service resource")
+		return nil, nil
+	}
 
 	podSpec, err := GetCommonPodSpec(mcpServer, mcpServerTemplate)
 	if err != nil {
 		return nil, err
 	}
 	componentMeta := GetCommonMeta(mcpServer, mcpServerTemplate)
+	componentMeta.Annotations["serving.knative.openshift.io/enablePassthrough"] = "true"
+	componentMeta.Annotations["sidecar.istio.io/inject"] = "true"
+	componentMeta.Annotations["sidecar.istio.io/rewriteAppHTTPProbers"] = "true"
 
 	service := &knservingv1.Service{
 		ObjectMeta: componentMeta,

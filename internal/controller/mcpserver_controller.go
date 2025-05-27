@@ -28,7 +28,7 @@ type MCPServerReconciler struct {
 	mcpServerConfigProcessor   *internal.MCPServerConfigProcessor
 	mcpServerTemplateProcessor *internal.MCPServerTemplateProcessor
 	rawKubeReconciler          *internal.RawKubeReconciler
-	ksvcReconciler             *internal.KSVCReconciler
+	serverlessReconciler       *internal.ServerlessReconciler
 	statusHandler              *internal.MCPServerStatusHandler
 }
 
@@ -40,7 +40,7 @@ func NewMCPServerReconciler(client client.Client, scheme *runtime.Scheme) *MCPSe
 		mcpServerTemplateProcessor: internal.NewMCPServerTemplateProcessor(client),
 		mcpServerConfigProcessor:   internal.NewMCPServerConfigProcessor(client),
 		rawKubeReconciler:          internal.NewRawKubeReconciler(client),
-		ksvcReconciler:             internal.NewKSVCReconciler(client),
+		serverlessReconciler:       internal.NewServerlessReconciler(client),
 		statusHandler:              internal.NewMCPServerStatusHandler(client),
 	}
 }
@@ -54,6 +54,7 @@ func NewMCPServerReconciler(client client.Client, scheme *runtime.Scheme) *MCPSe
 // +kubebuilder:rbac:groups=core,resources=services,verbs=create;delete;get;list;patch;update;watch
 // +kubebuilder:rbac:groups=core,resources=services,verbs=create;delete;get;list;patch;update;watch
 // +kubebuilder:rbac:groups=route.openshift.io,resources=routes,verbs=create;delete;get;list;patch;update;watch
+// +kubebuilder:rbac:groups=maistra.io,resources=servicemeshmembers,verbs=create;delete;get;list;patch;update;watch
 // +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
@@ -77,11 +78,6 @@ func (r *MCPServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 	defer r.statusHandler.HandleStatusChange(ctx, logger, mcpServer, err)
 
-	mcpServerConfig, err := r.mcpServerConfigProcessor.LoadMCPServerConfig(ctx, logger)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-
 	templateName, ok := mcpServer.Annotations[internal.MCPServerTemplateAnnotation]
 	if !ok || templateName == "" {
 		return ctrl.Result{}, fmt.Errorf("no template name found in MCPServer annotations")
@@ -92,22 +88,19 @@ func (r *MCPServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, err
 	}
 
-	deploymentMode := internal.GetDeploymentMode(mcpServer.Annotations, mcpServerConfig)
-	logger.Info("MCPServer deployment mode ", "deployment mode ", deploymentMode)
+	mcpServerConfig, err := r.mcpServerConfigProcessor.LoadMCPServerConfig(ctx, logger)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
 
-	networkVisibility := internal.GetNetworkVisibility(mcpServer.Annotations, mcpServerConfig)
-	logger.Info("MCPServer Network visibility ", "network Visibility ", networkVisibility)
+	err = r.rawKubeReconciler.Reconcile(ctx, logger, mcpServer, mcpServerTemplate, mcpServerConfig)
+	if err != nil {
+		return internal.NewReconciliationErrorHandler().GetReconcileResultFor(err)
+	}
 
-	if deploymentMode == internal.RawDeployment {
-		err = r.rawKubeReconciler.Reconcile(ctx, logger, mcpServer, mcpServerTemplate, networkVisibility)
-		if err != nil {
-			return internal.NewReconciliationErrorHandler().GetReconcileResultFor(err)
-		}
-	} else {
-		err = r.ksvcReconciler.Reconcile(ctx, logger, mcpServer, mcpServerTemplate)
-		if err != nil {
-			return internal.NewReconciliationErrorHandler().GetReconcileResultFor(err)
-		}
+	err = r.serverlessReconciler.Reconcile(ctx, logger, mcpServer, mcpServerTemplate, mcpServerConfig)
+	if err != nil {
+		return internal.NewReconciliationErrorHandler().GetReconcileResultFor(err)
 	}
 
 	return ctrl.Result{}, nil

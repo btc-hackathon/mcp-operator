@@ -38,6 +38,18 @@ rules:
   - update
   - watch
 - apiGroups:
+  - maistra.io
+  resources:
+  - servicemeshmembers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - mcp.opendatahub.io
   resources:
   - mcpservers

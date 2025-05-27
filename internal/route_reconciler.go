@@ -44,11 +44,11 @@ func NewRouteReconciler(client client.Client) *RouteReconciler {
 	}
 }
 
-func (s *RouteReconciler) Reconcile(ctx context.Context, logger logr.Logger, mcpServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate, networkVisibility NetworkVisibility) error {
+func (s *RouteReconciler) Reconcile(ctx context.Context, logger logr.Logger, mcpServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate, mcpServerConfig *MCPServerConfig) error {
 
 	logger.Info("Reconciling Route for RAW Deployment")
 	// Create Desired resource
-	desiredResource, err := s.createDesiredResource(ctx, logger, mcpServer, mcpServerTemplate, networkVisibility)
+	desiredResource, err := s.createDesiredResource(ctx, logger, mcpServer, mcpServerTemplate, mcpServerConfig)
 	if err != nil {
 		return err
 	}
@@ -66,11 +66,17 @@ func (s *RouteReconciler) Reconcile(ctx context.Context, logger logr.Logger, mcp
 	return nil
 }
 
-func (s *RouteReconciler) createDesiredResource(ctx context.Context, logger logr.Logger, mcpServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate, networkVisibility NetworkVisibility) (*v1.Route, error) {
+func (s *RouteReconciler) createDesiredResource(ctx context.Context, logger logr.Logger, mcpServer *mcpv1alpha1.MCPServer, mcpServerTemplate *mcpv1alpha1.MCPServerTemplate, mcpServerConfig *MCPServerConfig) (*v1.Route, error) {
 
+	deploymentMode := GetDeploymentMode(logger, mcpServer.Annotations, mcpServerConfig)
+	if deploymentMode != RawDeployment {
+		logger.Info("Deployment mode is not RAWDeployment. Skipping to create Route resource")
+		return nil, nil
+	}
+
+	networkVisibility := GetNetworkVisibility(logger, mcpServer.Annotations, mcpServerConfig)
 	if networkVisibility != Exposed {
-		logger.Info("MCPServer does not have annotation '" + NetworkVisibilityAnnotation + "' " +
-			" set to '" + string(Exposed) + "'. Skipping route creation")
+		logger.Info("networkVisibility is not Exposed. Skipping route creation")
 		return nil, nil
 	}
 

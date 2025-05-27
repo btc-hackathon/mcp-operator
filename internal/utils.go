@@ -18,6 +18,7 @@ package internal
 
 import (
 	"fmt"
+	"github.com/go-logr/logr"
 	mcpv1alpha1 "github.com/opendatahub-io/mcp-operator/api/v1alpha1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,28 +27,33 @@ import (
 	"reflect"
 )
 
-func GetDeploymentMode(annotations map[string]string, mcpServerConfig *MCPServerConfig) DeploymentModeType {
+func GetDeploymentMode(logger logr.Logger, annotations map[string]string, mcpServerConfig *MCPServerConfig) DeploymentModeType {
 
-	// Second priority, if the status doesn't have the deploymentMode recorded, is explicit annotations
+	var finalDeploymentMode DeploymentModeType
 	deploymentMode, ok := annotations[DeploymentModeAnnotation]
 	if ok && (deploymentMode == string(RawDeployment) || deploymentMode == string(Serverless)) {
-		return DeploymentModeType(deploymentMode)
+		finalDeploymentMode = DeploymentModeType(deploymentMode)
+	} else {
+		// Finally, if an MSPServer is being created and does not explicitly specify a DeploymentMode
+		finalDeploymentMode = DeploymentModeType(mcpServerConfig.DefaultDeploymentMode)
 	}
-
-	// Finally, if an InferenceService is being created and does not explicitly specify a DeploymentMode
-	return DeploymentModeType(mcpServerConfig.DefaultDeploymentMode)
+	logger.Info("MCPServer deployment mode ", "deployment mode ", finalDeploymentMode)
+	return finalDeploymentMode
 }
 
-func GetNetworkVisibility(annotations map[string]string, mcpServerConfig *MCPServerConfig) NetworkVisibility {
+func GetNetworkVisibility(logger logr.Logger, annotations map[string]string, mcpServerConfig *MCPServerConfig) NetworkVisibility {
 
 	// Second priority, if the status doesn't have the networkVisibility recorded, is explicit annotations
+	var finalNetworkVisibility NetworkVisibility
 	networkVisibility, ok := annotations[NetworkVisibilityAnnotation]
 	if ok && (networkVisibility == string(Exposed) || networkVisibility == string(Hidden)) {
-		return NetworkVisibility(networkVisibility)
+		finalNetworkVisibility = NetworkVisibility(networkVisibility)
+	} else {
+		// Finally, if an MCPServer is being created and does not explicitly specify a NetworkVisibility
+		finalNetworkVisibility = NetworkVisibility(mcpServerConfig.DefaultVisibility)
 	}
-
-	// Finally, if an MCPServer is being created and does not explicitly specify a NetworkVisibility
-	return NetworkVisibility(mcpServerConfig.DefaultVisibility)
+	logger.Info("MCPServer Network visibility ", "network Visibility ", finalNetworkVisibility)
+	return finalNetworkVisibility
 }
 
 func GetUnifiedMCPServerContainer(mcpServerTemplate *mcpv1alpha1.MCPServerTemplate, mcpServer *mcpv1alpha1.MCPServer) (*v1.Container, error) {
