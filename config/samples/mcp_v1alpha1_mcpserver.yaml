@@ -12,4 +12,4 @@ metadata:
 spec:
   container:
     name: mcpserver-container
-    image: quay.io/vajain/mcp-workday:4.0
+    image: quay.io/vajain/mcp-workday:6.0
