@@ -6,7 +6,7 @@ metadata:
   annotations:
     mcp.opendatahub.io/deploymentmode: RawDeployment
     mcp.opendatahub.io/visibility: hidden
-    mcp.opendatahub.io/mcpservertemplate: mcp-operator-raw-mcpserver-template
+    mcp.opendatahub.io/mcpservertemplate: mcp-operator-mcpserver-template
   name: mcp-workday
 spec:
   container:

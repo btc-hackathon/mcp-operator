@@ -1,100 +1,148 @@
-# mcp-operator
-// TODO(user): Add simple overview of use/purpose
+# <img src="mcp.png" alt="High level Design" width="40" height="40"/> MCP Operator
 
-## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+**MCP Operator** (Model Context Protocol Operator) is a generic Kubernetes Operator that enables the deployment of MCP Server instances on **OpenShift** environments with ease and reusability. It introduces two custom resources: `MCPServerTemplate` and `MCPServer` to streamline and standardize deployments.
 
-## Getting Started
+---
 
-### Prerequisites
-- go version v1.22.0+
-- docker version 17.03+.
-- kubectl version v1.11.3+.
-- Access to a Kubernetes v1.11.3+ cluster.
+## 🚀 Features
 
-### To Deploy on the cluster
-**Build and push your image to the location specified by `IMG`:**
+- ✅ Declarative deployment of MCP Servers
+- 🔁 Reusable templates for consistent configurations
+- 🔐 Support for image pull secrets and service accounts
+- ⚙️ Familiar Kubernetes-style `spec` structure for quick adoption
 
-```sh
-make docker-build docker-push IMG=<some-registry>/mcp-operator:tag
+---
+
+## 🏗 High-Level Architecture
+
+MCP Operator supports flexible deployment strategies and integrates tightly with OpenShift and its AI ecosystem. Here’s how it works:
+
+<img src="hld.png" alt="High level Design" width="400" height="450"/>
+
+### 📦 RawDeployment Mode
+A standard Deployment, Service, and optionally a Route are created.
+
+Use the `mcp.opendatahub.io/visibility` annotation to control Route creation:
+
+- exposed → Route is created.
+
+- hidden or unset → No Route is created.
+
+### ⚡ Serverless Mode
+- Integrates with OpenShift AI Operator ecosystem.
+
+- Deploys MCP Server as a Knative Service.
+
+- Leverages existing Service Mesh and Serverless Operator resources.
+
+- All traffic (inbound and outbound) is managed via Istio.
+
+## 📦 Custom Resources
+
+### 🧩 MCPServerTemplate
+
+---
+
+`MCPServerTemplate` acts as a reusable deployment configuration, similar in structure to Kubernetes `Deployment` resources. It helps users avoid repetitive configurations when deploying multiple MCP Server instances. 
+- **Acts as a reusable deployment template** for MCP Servers.
+- Must be created in the **same namespace where the MCP Operator is installed**.
+- Can be **referenced by any `MCPServer` across all namespaces**, making it a shared deployment blueprint.
+
+It's allowing users to define:
+
+- Containers
+
+- Labels and Annotations
+
+- Resource Requests and Limits
+
+- ImagePullSecrets
+
+This helps avoid repetitive configurations and simplifies server instantiation.
+
+#### Example
+
+```yaml
+apiVersion: mcp.opendatahub.io/v1alpha1
+kind: MCPServerTemplate
+metadata:
+  annotations:
+    openshift.io/display-name: 'MCP Server Template'
+  name: mcpserver-template
+spec:
+  containers:
+    - name: mcpserver-container
+      image: $(mcp-server-image)
+      ports:
+        - containerPort: 8080
+          protocol: TCP
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      imagePullPolicy: IfNotPresent
+      resources:
+        requests:
+          memory: "128Mi"
+          cpu: "250m"
+        limits:
+          memory: "512Mi"
+          cpu: "500m"
+```          
+
+### 🧩 MCPServer
+
+---
+
+`MCPServer` is the primary resource that triggers the actual deployment of an MCP Server. It references an existing `MCPServerTemplate` through an annotation and merges runtime settings from both the template and the server spec.
+
+You can override or augment the template by defining:
+
+- A single container
+
+- ServiceAccountName
+
+- ImagePullSecrets
+
+#### Example
+
+Raw Deployment Mode
+```yaml
+apiVersion: mcp.opendatahub.io/v1alpha1
+kind: MCPServer
+metadata:
+  labels:
+    app.kubernetes.io/name: mcp-operator
+  annotations:
+    mcp.opendatahub.io/deploymentmode: RawDeployment
+    mcp.opendatahub.io/visibility: hidden
+    mcp.opendatahub.io/mcpservertemplate: mcp-operator-mcpserver-template
+  name: mcp-workday
+spec:
+  container:
+    name: mcpserver-container
+    image: quay.io/vajain/mcp-workday:6.0
+```
+Serverless Deployment Mode
+
+```yaml
+apiVersion: mcp.opendatahub.io/v1alpha1
+kind: MCPServer
+metadata:
+  labels:
+    app.kubernetes.io/name: mcp-operator
+  annotations:
+    mcp.opendatahub.io/deploymentmode: Serverless
+    mcp.opendatahub.io/visibility: exposed
+    mcp.opendatahub.io/mcpservertemplate: mcp-operator-mcpserver-template
+    serving.knative.openshift.io/enablePassthrough: 'true'
+    sidecar.istio.io/inject: 'true'
+    sidecar.istio.io/rewriteAppHTTPProbers: 'true'
+  name: mcp-linkedin
+spec:
+  container:
+    name: mcpserver-container
+    image: quay.io/vajain/mcp-linkedin:6.0
 ```
 
-**NOTE:** This image ought to be published in the personal registry you specified.
-And it is required to have access to pull the image from the working environment.
-Make sure you have the proper permission to the registry if the above commands don’t work.
-
-**Install the CRDs into the cluster:**
-
-```sh
-make install
-```
-
-**Deploy the Manager to the cluster with the image specified by `IMG`:**
-
-```sh
-make deploy IMG=<some-registry>/mcp-operator:tag
-```
-
-> **NOTE**: If you encounter RBAC errors, you may need to grant yourself cluster-admin
-privileges or be logged in as admin.
-
-**Create instances of your solution**
-You can apply the samples (examples) from the config/sample:
-
-```sh
-kubectl apply -k config/samples/
-```
-
->**NOTE**: Ensure that the samples has default values to test it out.
-
-### To Uninstall
-**Delete the instances (CRs) from the cluster:**
-
-```sh
-kubectl delete -k config/samples/
-```
-
-**Delete the APIs(CRDs) from the cluster:**
-
-```sh
-make uninstall
-```
-
-**UnDeploy the controller from the cluster:**
-
-```sh
-make undeploy
-```
-
-## Project Distribution
-
-Following are the steps to build the installer and distribute this project to users.
-
-1. Build the installer for the image built and published in the registry:
-
-```sh
-make build-installer IMG=<some-registry>/mcp-operator:tag
-```
-
-NOTE: The makefile target mentioned above generates an 'install.yaml'
-file in the dist directory. This file contains all the resources built
-with Kustomize, which are necessary to install this project without
-its dependencies.
-
-2. Using the installer
-
-Users can just run kubectl apply -f <URL for YAML BUNDLE> to install the project, i.e.:
-
-```sh
-kubectl apply -f https://raw.githubusercontent.com/<org>/mcp-operator/<tag or branch>/dist/install.yaml
-```
-
-## Contributing
-// TODO(user): Add detailed information on how you would like others to contribute to this project
-
-**NOTE:** Run `make help` for more information on all potential `make` targets
-
-More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
 
 ## License
 

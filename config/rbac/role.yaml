@@ -40,6 +40,15 @@ rules:
 - apiGroups:
   - maistra.io
   resources:
+  - servicemeshcontrolplanes
+  verbs:
+  - get
+  - list
+  - use
+  - watch
+- apiGroups:
+  - maistra.io
+  resources:
   - servicemeshmembers
   verbs:
   - create
