@@ -13,30 +13,6 @@
 
 ---
 
-## 🏗 High-Level Architecture
-
-MCP Operator supports flexible deployment strategies and integrates tightly with OpenShift and its AI ecosystem. Here’s how it works:
-
-<img src="hld.png" alt="High level Design" width="400" height="450"/>
-
-### 📦 RawDeployment Mode
-A standard Deployment, Service, and optionally a Route are created.
-
-Use the `mcp.opendatahub.io/visibility` annotation to control Route creation:
-
-- exposed → Route is created.
-
-- hidden or unset → No Route is created.
-
-### ⚡ Serverless Mode
-- Integrates with OpenShift AI Operator ecosystem.
-
-- Deploys MCP Server as a Knative Service.
-
-- Leverages existing Service Mesh and Serverless Operator resources.
-
-- All traffic (inbound and outbound) is managed via Istio.
-
 ## 📦 Custom Resources
 
 ### 🧩 MCPServerTemplate
@@ -143,6 +119,33 @@ spec:
     image: quay.io/vajain/mcp-linkedin:6.0
 ```
 
+---
+
+## 🏗 High-Level Architecture
+
+MCP Operator supports flexible deployment strategies and integrates tightly with OpenShift and its AI ecosystem. Here’s how it works:
+
+<img src="hld.png" alt="High level Design" width="400" height="450"/>
+
+### 📦 RawDeployment Mode
+A standard Deployment, Service, and optionally a Route are created.
+
+Use the `mcp.opendatahub.io/visibility` annotation to control Route creation:
+
+- exposed → Route is created.
+
+- hidden or unset → No Route is created.
+
+### ⚡ Serverless Mode
+- Integrates with OpenShift AI Operator ecosystem.
+
+- Deploys MCP Server as a Knative Service.
+
+- Leverages existing Service Mesh and Serverless Operator resources.
+
+- All traffic (inbound and outbound) is managed via Istio.
+
+---
 
 ## License
 
